@@ -4,6 +4,10 @@
   "echoregions.state.haunted": "Haunted",
   "echoregions.state.war_torn": "War-Torn",
   "echoregions.state.cultivated": "Cultivated",
+  "echoregions.state.settled": "Settled",
+  "echoregions.state.blighted": "Blighted",
+  "echoregions.state.travelled": "Travelled",
+  "echoregions.state.exploited": "Exploited",
 
   "item.echoregions.pebble": "Pebble",
   "item.echoregions.ectoplasm": "Ectoplasm",

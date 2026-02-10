@@ -4,16 +4,18 @@ Echo Regions tracks local chunk memory (mining, combat, death) and derives a reg
 without changing biomes or worldgen. Effects and visuals are added via events only.
 
 ## Status
-Current: v0.2
+Current: v0.3
 
-## Features (v0.2)
+## Features (v0.3)
 - Server-side SavedData: ChunkPos -> RegionMemory
 - Mining/combat/death tracking
 - Farming tracking (bone meal, planting, harvest)
+- Building, fire, travel, and rare-mining tracking
 - Configurable thresholds + decay mode/interval
 - Score decay with pruning
-- Debug command: `/echoregion here`
+- Debug command: `/echoregion here` (local + 3x3 region sums)
 - Pebble + Ectoplasm items with tooltips
+- Region states: SCARRED, HAUNTED, WAR_TORN, CULTIVATED, SETTLED, BLIGHTED, TRAVELLED, EXPLOITED
 
 ## Build and run
 ```bash
@@ -29,14 +31,11 @@ Current: v0.2
 - Package: `cz.stofiiis.echoregions`
 
 ## Roadmap
-- v0.2: config + Pebble/Ectoplasm + tooltips
-- v0.3: region radius + ambient cues + basic effects
+- v0.4: ambient cues + basic effects
 
 ## Backlog ideas
-- SETTLED/BUILT (buildScore)
-- BLIGHTED/BURNED (fireScore / explosions)
-- TRAVELLED/WORN (travelScore)
-- EXPLOITED (rare mining)
+- Ambient cues per region state
+- Small, safe gameplay effects tied to states
 
 ## Non-goals
 - No biome/worldgen rewrites
