@@ -9,16 +9,16 @@ import net.neoforged.neoforge.registries.DeferredRegister;
 public final class EchoRegionsItems {
     public static final DeferredRegister.Items ITEMS = DeferredRegister.createItems(EchoRegions.MOD_ID);
 
-    public static final DeferredItem<Item> PEBBLE = ITEMS.register(
+    public static final DeferredItem<Item> PEBBLE = ITEMS.registerItem(
             "pebble",
-            () -> new TooltipItem(new Item.Properties(),
+            properties -> new TooltipItem(properties,
                     "item.echoregions.pebble.tooltip",
                     "item.echoregions.pebble.hint")
     );
 
-    public static final DeferredItem<Item> ECTOPLASM = ITEMS.register(
+    public static final DeferredItem<Item> ECTOPLASM = ITEMS.registerItem(
             "ectoplasm",
-            () -> new TooltipItem(new Item.Properties(),
+            properties -> new TooltipItem(properties,
                     "item.echoregions.ectoplasm.tooltip",
                     "item.echoregions.ectoplasm.hint")
     );
