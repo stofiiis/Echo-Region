@@ -4,13 +4,16 @@ Echo Regions tracks local chunk memory (mining, combat, death) and derives a reg
 without changing biomes or worldgen. Effects and visuals are added via events only.
 
 ## Status
-Current: v0.1 (MVP)
+Current: v0.2
 
-## Features (v0.1)
+## Features (v0.2)
 - Server-side SavedData: ChunkPos -> RegionMemory
 - Mining/combat/death tracking
-- Score decay every 5 minutes with pruning
+- Farming tracking (bone meal, planting, harvest)
+- Configurable thresholds + decay mode/interval
+- Score decay with pruning
 - Debug command: `/echoregion here`
+- Pebble + Ectoplasm items with tooltips
 
 ## Build and run
 ```bash

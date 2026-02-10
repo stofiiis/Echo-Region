@@ -1,6 +1,7 @@
 package cz.stofiiis.echoregions.events;
 
 import cz.stofiiis.echoregions.commands.EchoRegionCommand;
+import cz.stofiiis.echoregions.config.EchoRegionsConfig;
 import cz.stofiiis.echoregions.data.RegionMemoryData;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
@@ -24,7 +25,6 @@ import net.neoforged.neoforge.event.level.BlockEvent;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
 
 public class RegionEvents {
-    private static final int DECAY_INTERVAL_TICKS = 20 * 60 * 5;
     private int tickCounter = 0;
 
     @SubscribeEvent
@@ -115,14 +115,20 @@ public class RegionEvents {
 
     @SubscribeEvent
     public void onServerTick(ServerTickEvent.Post event) {
-        if (++tickCounter < DECAY_INTERVAL_TICKS) {
+        int intervalTicks = Math.max(1, EchoRegionsConfig.DECAY_INTERVAL_MINUTES.get()) * 20 * 60;
+        if (++tickCounter < intervalTicks) {
             return;
         }
         tickCounter = 0;
         MinecraftServer server = event.getServer();
+        EchoRegionsConfig.DecayMode mode = EchoRegionsConfig.DECAY_MODE.get();
         for (ServerLevel level : server.getAllLevels()) {
             RegionMemoryData data = RegionMemoryData.get(level);
-            data.decayAll(level.getGameTime());
+            if (mode == EchoRegionsConfig.DecayMode.PERCENT) {
+                data.decayAllPercent(EchoRegionsConfig.DECAY_PERCENT.get(), level.getGameTime());
+            } else {
+                data.decayAllFlat(EchoRegionsConfig.DECAY_FLAT_AMOUNT.get(), level.getGameTime());
+            }
         }
     }
 
