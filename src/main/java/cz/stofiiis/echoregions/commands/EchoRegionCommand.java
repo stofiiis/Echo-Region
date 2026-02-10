@@ -1,10 +1,10 @@
-package cz.tvojeid.echoregions.commands;
+package cz.stofiiis.echoregions.commands;
 
 import com.mojang.brigadier.CommandDispatcher;
 
-import cz.tvojeid.echoregions.data.RegionMemory;
-import cz.tvojeid.echoregions.data.RegionMemoryData;
-import cz.tvojeid.echoregions.region.RegionState;
+import cz.stofiiis.echoregions.data.RegionMemory;
+import cz.stofiiis.echoregions.data.RegionMemoryData;
+import cz.stofiiis.echoregions.region.RegionState;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.network.chat.Component;

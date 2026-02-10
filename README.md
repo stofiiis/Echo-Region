@@ -23,7 +23,7 @@ Current: v0.1 (MVP)
 - Minecraft 1.21.11
 - NeoForge 21.11.38-beta
 - ModDevGradle MDK
-- Package: `cz.tvojeid.echoregions`
+- Package: `cz.stofiiis.echoregions`
 
 ## Roadmap
 - v0.2: config + Pebble/Ectoplasm + tooltips

@@ -1,7 +1,7 @@
-package cz.tvojeid.echoregions.events;
+package cz.stofiiis.echoregions.events;
 
-import cz.tvojeid.echoregions.commands.EchoRegionCommand;
-import cz.tvojeid.echoregions.data.RegionMemoryData;
+import cz.stofiiis.echoregions.commands.EchoRegionCommand;
+import cz.stofiiis.echoregions.data.RegionMemoryData;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.LivingEntity;

@@ -1,6 +1,6 @@
-package cz.tvojeid.echoregions.region;
+package cz.stofiiis.echoregions.region;
 
-import cz.tvojeid.echoregions.data.RegionMemory;
+import cz.stofiiis.echoregions.data.RegionMemory;
 
 public enum RegionState {
     NEUTRAL("neutral"),

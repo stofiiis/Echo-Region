@@ -1,10 +1,10 @@
-package cz.tvojeid.echoregions;
+package cz.stofiiis.echoregions;
 
 import org.slf4j.Logger;
 
 import com.mojang.logging.LogUtils;
 
-import cz.tvojeid.echoregions.events.RegionEvents;
+import cz.stofiiis.echoregions.events.RegionEvents;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.common.Mod;

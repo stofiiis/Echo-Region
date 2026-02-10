@@ -1,4 +1,4 @@
-package cz.tvojeid.echoregions.data;
+package cz.stofiiis.echoregions.data;
 
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;

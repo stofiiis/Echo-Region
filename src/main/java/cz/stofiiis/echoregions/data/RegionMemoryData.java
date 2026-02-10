@@ -1,4 +1,4 @@
-package cz.tvojeid.echoregions.data;
+package cz.stofiiis.echoregions.data;
 
 import java.util.HashMap;
 import java.util.Iterator;
@@ -7,7 +7,7 @@ import java.util.Map;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 
-import cz.tvojeid.echoregions.EchoRegions;
+import cz.stofiiis.echoregions.EchoRegions;
 import net.minecraft.util.datafix.DataFixTypes;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.saveddata.SavedData;
