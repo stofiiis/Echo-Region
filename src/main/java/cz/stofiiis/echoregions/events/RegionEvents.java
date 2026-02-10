@@ -4,11 +4,14 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
+import cz.stofiiis.echoregions.EchoRegions;
 import cz.stofiiis.echoregions.commands.EchoRegionCommand;
 import cz.stofiiis.echoregions.config.EchoRegionsConfig;
 import cz.stofiiis.echoregions.data.RegionMemoryData;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -19,12 +22,14 @@ import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.block.BaseFireBlock;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.CropBlock;
 import net.minecraft.world.level.block.NetherWartBlock;
 import net.minecraft.world.level.block.SweetBerryBushBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.tags.BlockTags;
+import net.minecraft.tags.TagKey;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.neoforge.common.Tags;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
@@ -37,6 +42,11 @@ import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
 
 public class RegionEvents {
+    private static final TagKey<Block> BUILDING_BLOCKS = TagKey.create(
+            Registries.BLOCK,
+            Identifier.fromNamespaceAndPath(EchoRegions.MOD_ID, "building_blocks")
+    );
+
     private final Map<UUID, PlayerChunk> lastChunkByPlayer = new HashMap<>();
     private int tickCounter = 0;
 
@@ -143,7 +153,9 @@ public class RegionEvents {
         if (isSapling(placed)) {
             return;
         }
-        data.addBuildScore(chunkPos, 1, level.getGameTime());
+        if (isBuildBlock(placed)) {
+            data.addBuildScore(chunkPos, 1, level.getGameTime());
+        }
     }
 
     @SubscribeEvent
@@ -241,5 +253,9 @@ public class RegionEvents {
                 || state.is(BlockTags.SAPLINGS)
                 || state.getBlock() instanceof NetherWartBlock
                 || state.getBlock() instanceof SweetBerryBushBlock;
+    }
+
+    private static boolean isBuildBlock(BlockState state) {
+        return state.is(BUILDING_BLOCKS);
     }
 }

@@ -1,0 +1,26 @@
+{
+  "replace": false,
+  "values": [
+    "#minecraft:planks",
+    "#minecraft:logs",
+    "#minecraft:wooden_stairs",
+    "#minecraft:wooden_slabs",
+    "#minecraft:wooden_fences",
+    "#minecraft:wooden_doors",
+    "#minecraft:wooden_trapdoors",
+    "#minecraft:wooden_pressure_plates",
+    "#minecraft:wooden_buttons",
+    "#minecraft:stone_bricks",
+    "#minecraft:stairs",
+    "#minecraft:slabs",
+    "#minecraft:walls",
+    "#minecraft:fences",
+    "#minecraft:glass",
+    "#minecraft:glass_panes",
+    "#minecraft:terracotta",
+    "#minecraft:concrete",
+    "#minecraft:concrete_powder",
+    "#minecraft:wool",
+    "#minecraft:carpets"
+  ]
+}
