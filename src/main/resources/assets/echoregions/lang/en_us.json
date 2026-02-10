@@ -2,5 +2,6 @@
   "echoregions.state.neutral": "Neutral",
   "echoregions.state.scarred": "Scarred",
   "echoregions.state.haunted": "Haunted",
-  "echoregions.state.war_torn": "War-Torn"
+  "echoregions.state.war_torn": "War-Torn",
+  "echoregions.state.cultivated": "Cultivated"
 }

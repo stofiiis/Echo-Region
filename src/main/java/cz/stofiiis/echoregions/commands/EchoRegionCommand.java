@@ -34,6 +34,7 @@ public final class EchoRegionCommand {
                                     int mining = memory != null ? memory.getMiningScore() : 0;
                                     int combat = memory != null ? memory.getCombatScore() : 0;
                                     int death = memory != null ? memory.getDeathScore() : 0;
+                                    int farm = memory != null ? memory.getFarmScore() : 0;
                                     long lastUpdated = memory != null ? memory.getLastUpdated() : 0L;
                                     long ticksAgo = lastUpdated > 0 ? Math.max(0, level.getGameTime() - lastUpdated) : 0L;
 
@@ -42,6 +43,7 @@ public final class EchoRegionCommand {
                                         case HAUNTED -> ChatFormatting.DARK_PURPLE;
                                         case WAR_TORN -> ChatFormatting.GOLD;
                                         case NEUTRAL -> ChatFormatting.GRAY;
+                                        case CULTIVATED -> ChatFormatting.GREEN;
                                     };
 
                                     Component header = Component.literal("[EchoRegions]").withStyle(ChatFormatting.AQUA);
@@ -49,25 +51,28 @@ public final class EchoRegionCommand {
 
                                     Component message = Component.empty()
                                             .append(header)
-                                            .append(Component.literal("\n• Chunk: " + chunkPos.x + ", " + chunkPos.z))
-                                            .append(Component.literal("\n• State: "))
+                                            .append(Component.literal("\n> Chunk: " + chunkPos.x + ", " + chunkPos.z))
+                                            .append(Component.literal("\n> State: "))
                                             .append(stateComponent)
                                             .append(Component.literal(" (dominant=" + dominant.getId() + ")"))
                                             .append(Component.literal(
-                                                    "\n• Thresholds: mining=" + RegionState.THRESHOLD_MINING
+                                                    "\n> Thresholds: mining=" + RegionState.THRESHOLD_MINING
                                                             + " combat=" + RegionState.THRESHOLD_COMBAT
                                                             + " death=" + RegionState.THRESHOLD_DEATH
+                                                            + " farm=" + RegionState.THRESHOLD_FARM
                                             ))
                                             .append(Component.literal("\n\nLocal (chunk):"))
-                                            .append(Component.literal("\n  • mining: " + mining))
-                                            .append(Component.literal("\n  • combat: " + combat))
-                                            .append(Component.literal("\n  • death: " + death))
+                                            .append(Component.literal("\n  - mining: " + mining))
+                                            .append(Component.literal("\n  - combat: " + combat))
+                                            .append(Component.literal("\n  - death: " + death))
+                                            .append(Component.literal("\n  - farm: " + farm))
                                             .append(Component.literal("\n\nRegion (3x3):"))
-                                            .append(Component.literal("\n  • mining: " + aggregated.mining()))
-                                            .append(Component.literal("\n  • combat: " + aggregated.combat()))
-                                            .append(Component.literal("\n  • death: " + aggregated.death()))
+                                            .append(Component.literal("\n  - mining: " + aggregated.mining()))
+                                            .append(Component.literal("\n  - combat: " + aggregated.combat()))
+                                            .append(Component.literal("\n  - death: " + aggregated.death()))
+                                            .append(Component.literal("\n  - farm: " + aggregated.farm()))
                                             .append(Component.literal("\n\nDecay:"))
-                                            .append(Component.literal("\n  • lastUpdated: " + lastUpdated + " (ago " + ticksAgo + " ticks)"));
+                                            .append(Component.literal("\n  - lastUpdated: " + lastUpdated + " (ago " + ticksAgo + " ticks)"));
                                     source.sendSuccess(() -> message, false);
                                     return 1;
                                 }))

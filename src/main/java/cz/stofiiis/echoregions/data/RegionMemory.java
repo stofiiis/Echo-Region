@@ -8,22 +8,25 @@ public final class RegionMemory {
             Codec.INT.optionalFieldOf("miningScore", 0).forGetter(RegionMemory::getMiningScore),
             Codec.INT.optionalFieldOf("combatScore", 0).forGetter(RegionMemory::getCombatScore),
             Codec.INT.optionalFieldOf("deathScore", 0).forGetter(RegionMemory::getDeathScore),
+            Codec.INT.optionalFieldOf("farmScore", 0).forGetter(RegionMemory::getFarmScore),
             Codec.LONG.optionalFieldOf("lastUpdated", 0L).forGetter(RegionMemory::getLastUpdated)
     ).apply(instance, RegionMemory::new));
 
     private int miningScore;
     private int combatScore;
     private int deathScore;
+    private int farmScore;
     private long lastUpdated;
 
     public RegionMemory() {
-        this(0, 0, 0, 0L);
+        this(0, 0, 0, 0, 0L);
     }
 
-    public RegionMemory(int miningScore, int combatScore, int deathScore, long lastUpdated) {
+    public RegionMemory(int miningScore, int combatScore, int deathScore, int farmScore, long lastUpdated) {
         this.miningScore = Math.max(0, miningScore);
         this.combatScore = Math.max(0, combatScore);
         this.deathScore = Math.max(0, deathScore);
+        this.farmScore = Math.max(0, farmScore);
         this.lastUpdated = Math.max(0L, lastUpdated);
     }
 
@@ -37,6 +40,10 @@ public final class RegionMemory {
 
     public int getDeathScore() {
         return deathScore;
+    }
+
+    public int getFarmScore() {
+        return farmScore;
     }
 
     public long getLastUpdated() {
@@ -67,6 +74,14 @@ public final class RegionMemory {
         lastUpdated = gameTime;
     }
 
+    void addFarm(int amount, long gameTime) {
+        if (amount <= 0) {
+            return;
+        }
+        farmScore += amount;
+        lastUpdated = gameTime;
+    }
+
     boolean decay(int amount, long gameTime) {
         if (amount <= 0) {
             return false;
@@ -87,6 +102,11 @@ public final class RegionMemory {
             deathScore = newDeath;
             changed = true;
         }
+        int newFarm = Math.max(0, farmScore - amount);
+        if (newFarm != farmScore) {
+            farmScore = newFarm;
+            changed = true;
+        }
         if (changed) {
             lastUpdated = gameTime;
         }
@@ -94,6 +114,6 @@ public final class RegionMemory {
     }
 
     boolean isEmpty() {
-        return miningScore == 0 && combatScore == 0 && deathScore == 0;
+        return miningScore == 0 && combatScore == 0 && deathScore == 0 && farmScore == 0;
     }
 }

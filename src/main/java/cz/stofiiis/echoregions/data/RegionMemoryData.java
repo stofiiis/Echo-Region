@@ -66,6 +66,12 @@ public class RegionMemoryData extends SavedData {
         setDirty();
     }
 
+    public void addFarmScore(ChunkPos pos, int amount, long gameTime) {
+        RegionMemory memory = getOrCreate(pos);
+        memory.addFarm(amount, gameTime);
+        setDirty();
+    }
+
     public void decayAll(long gameTime) {
         boolean changed = false;
         Iterator<Map.Entry<Long, RegionMemory>> iterator = memories.entrySet().iterator();

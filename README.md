@@ -29,6 +29,12 @@ Current: v0.1 (MVP)
 - v0.2: config + Pebble/Ectoplasm + tooltips
 - v0.3: region radius + ambient cues + basic effects
 
+## Backlog ideas
+- SETTLED/BUILT (buildScore)
+- BLIGHTED/BURNED (fireScore / explosions)
+- TRAVELLED/WORN (travelScore)
+- EXPLOITED (rare mining)
+
 ## Non-goals
 - No biome/worldgen rewrites
 - No custom dimensions
