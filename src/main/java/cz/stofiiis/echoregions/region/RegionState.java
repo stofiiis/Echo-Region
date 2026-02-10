@@ -1,5 +1,6 @@
 package cz.stofiiis.echoregions.region;
 
+import cz.stofiiis.echoregions.config.EchoRegionsConfig;
 import cz.stofiiis.echoregions.data.RegionMemory;
 import cz.stofiiis.echoregions.data.RegionMemoryData;
 import net.minecraft.world.level.ChunkPos;
@@ -10,12 +11,6 @@ public enum RegionState {
     HAUNTED("haunted"),
     WAR_TORN("war_torn"),
     CULTIVATED("cultivated");
-
-    public static final int DEFAULT_THRESHOLD = 10;
-    public static final int THRESHOLD_MINING = DEFAULT_THRESHOLD;
-    public static final int THRESHOLD_COMBAT = DEFAULT_THRESHOLD;
-    public static final int THRESHOLD_DEATH = DEFAULT_THRESHOLD;
-    public static final int THRESHOLD_FARM = DEFAULT_THRESHOLD;
 
     private final String id;
 
@@ -45,10 +40,10 @@ public enum RegionState {
             case NONE -> 0;
         };
         int threshold = switch (dominant) {
-            case MINING -> THRESHOLD_MINING;
-            case COMBAT -> THRESHOLD_COMBAT;
-            case DEATH -> THRESHOLD_DEATH;
-            case FARM -> THRESHOLD_FARM;
+            case MINING -> getThresholdMining();
+            case COMBAT -> getThresholdCombat();
+            case DEATH -> getThresholdDeath();
+            case FARM -> getThresholdFarm();
             case NONE -> Integer.MAX_VALUE;
         };
         if (dominantScore < threshold) {
@@ -128,6 +123,22 @@ public enum RegionState {
         public String getId() {
             return id;
         }
+    }
+
+    public static int getThresholdMining() {
+        return EchoRegionsConfig.THRESHOLD_MINING.get();
+    }
+
+    public static int getThresholdCombat() {
+        return EchoRegionsConfig.THRESHOLD_COMBAT.get();
+    }
+
+    public static int getThresholdDeath() {
+        return EchoRegionsConfig.THRESHOLD_DEATH.get();
+    }
+
+    public static int getThresholdFarm() {
+        return EchoRegionsConfig.THRESHOLD_FARM.get();
     }
 
     public record AggregatedScores(int mining, int combat, int death, int farm) {

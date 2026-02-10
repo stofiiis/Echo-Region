@@ -3,6 +3,7 @@ package cz.stofiiis.echoregions.data;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.function.Function;
 
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
@@ -72,13 +73,21 @@ public class RegionMemoryData extends SavedData {
         setDirty();
     }
 
-    public void decayAll(long gameTime) {
+    public void decayAllFlat(int amount, long gameTime) {
+        decayAllInternal(memory -> memory.decayFlat(amount, gameTime));
+    }
+
+    public void decayAllPercent(double factor, long gameTime) {
+        decayAllInternal(memory -> memory.decayPercent(factor, gameTime));
+    }
+
+    private void decayAllInternal(Function<RegionMemory, Boolean> decayer) {
         boolean changed = false;
         Iterator<Map.Entry<Long, RegionMemory>> iterator = memories.entrySet().iterator();
         while (iterator.hasNext()) {
             Map.Entry<Long, RegionMemory> entry = iterator.next();
             RegionMemory memory = entry.getValue();
-            if (memory.decay(1, gameTime)) {
+            if (decayer.apply(memory)) {
                 changed = true;
             }
             if (memory.isEmpty()) {

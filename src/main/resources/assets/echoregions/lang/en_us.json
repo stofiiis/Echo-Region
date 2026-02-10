@@ -3,5 +3,13 @@
   "echoregions.state.scarred": "Scarred",
   "echoregions.state.haunted": "Haunted",
   "echoregions.state.war_torn": "War-Torn",
-  "echoregions.state.cultivated": "Cultivated"
+  "echoregions.state.cultivated": "Cultivated",
+
+  "item.echoregions.pebble": "Pebble",
+  "item.echoregions.ectoplasm": "Ectoplasm",
+
+  "item.echoregions.pebble.tooltip": "Rough stone, worn by toil.",
+  "item.echoregions.pebble.hint": "Found in Scarred regions.",
+  "item.echoregions.ectoplasm.tooltip": "Cold residue of restless spirits.",
+  "item.echoregions.ectoplasm.hint": "Found in Haunted regions."
 }

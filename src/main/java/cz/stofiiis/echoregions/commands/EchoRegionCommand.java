@@ -58,10 +58,10 @@ public final class EchoRegionCommand {
                                             .append(stateComponent)
                                             .append(Component.literal(" (dominant=" + dominant.getId() + ")"))
                                             .append(Component.literal(
-                                                    "\n> Thresholds: mining=" + RegionState.THRESHOLD_MINING
-                                                            + " combat=" + RegionState.THRESHOLD_COMBAT
-                                                            + " death=" + RegionState.THRESHOLD_DEATH
-                                                            + " farm=" + RegionState.THRESHOLD_FARM
+                                                    "\n> Thresholds: mining=" + RegionState.getThresholdMining()
+                                                            + " combat=" + RegionState.getThresholdCombat()
+                                                            + " death=" + RegionState.getThresholdDeath()
+                                                            + " farm=" + RegionState.getThresholdFarm()
                                             ))
                                             .append(Component.literal("\n\nLocal (chunk):"))
                                             .append(Component.literal("\n  - mining: " + mining))

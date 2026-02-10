@@ -82,27 +82,40 @@ public final class RegionMemory {
         lastUpdated = gameTime;
     }
 
-    boolean decay(int amount, long gameTime) {
+    boolean decayFlat(int amount, long gameTime) {
         if (amount <= 0) {
             return false;
         }
-        boolean changed = false;
         int newMining = Math.max(0, miningScore - amount);
+        int newCombat = Math.max(0, combatScore - amount);
+        int newDeath = Math.max(0, deathScore - amount);
+        int newFarm = Math.max(0, farmScore - amount);
+        return applyDecay(newMining, newCombat, newDeath, newFarm, gameTime);
+    }
+
+    boolean decayPercent(double factor, long gameTime) {
+        double clamped = Math.max(0.0, Math.min(1.0, factor));
+        int newMining = (int) Math.floor(miningScore * clamped);
+        int newCombat = (int) Math.floor(combatScore * clamped);
+        int newDeath = (int) Math.floor(deathScore * clamped);
+        int newFarm = (int) Math.floor(farmScore * clamped);
+        return applyDecay(newMining, newCombat, newDeath, newFarm, gameTime);
+    }
+
+    private boolean applyDecay(int newMining, int newCombat, int newDeath, int newFarm, long gameTime) {
+        boolean changed = false;
         if (newMining != miningScore) {
             miningScore = newMining;
             changed = true;
         }
-        int newCombat = Math.max(0, combatScore - amount);
         if (newCombat != combatScore) {
             combatScore = newCombat;
             changed = true;
         }
-        int newDeath = Math.max(0, deathScore - amount);
         if (newDeath != deathScore) {
             deathScore = newDeath;
             changed = true;
         }
-        int newFarm = Math.max(0, farmScore - amount);
         if (newFarm != farmScore) {
             farmScore = newFarm;
             changed = true;
