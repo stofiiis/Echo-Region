@@ -10,7 +10,9 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.block.CropBlock;
+import net.minecraft.world.level.block.NetherWartBlock;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.SweetBerryBushBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.tags.BlockTags;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -82,6 +84,9 @@ public class RegionEvents {
         if (!event.isValidBonemealTarget()) {
             return;
         }
+        if (!isBonemealFarmingTarget(event.getState())) {
+            return;
+        }
         ChunkPos chunkPos = new ChunkPos(event.getPos());
         RegionMemoryData data = RegionMemoryData.get(level);
         data.addFarmScore(chunkPos, 2, level.getGameTime());
@@ -100,7 +105,7 @@ public class RegionEvents {
             return;
         }
         BlockState placed = event.getPlacedBlock();
-        if (!placed.is(BlockTags.CROPS)) {
+        if (!isPlantedCrop(placed)) {
             return;
         }
         ChunkPos chunkPos = new ChunkPos(event.getPos());
@@ -131,9 +136,28 @@ public class RegionEvents {
     }
 
     private static boolean isMatureCrop(BlockState state) {
-        if (!(state.getBlock() instanceof CropBlock crop)) {
-            return false;
+        if (state.getBlock() instanceof CropBlock crop) {
+            return crop.isMaxAge(state);
         }
-        return crop.isMaxAge(state);
+        if (state.getBlock() instanceof NetherWartBlock) {
+            return state.getValue(NetherWartBlock.AGE) >= NetherWartBlock.MAX_AGE;
+        }
+        if (state.getBlock() instanceof SweetBerryBushBlock) {
+            return state.getValue(SweetBerryBushBlock.AGE) >= SweetBerryBushBlock.MAX_AGE;
+        }
+        return false;
+    }
+
+    private static boolean isPlantedCrop(BlockState state) {
+        return state.is(BlockTags.CROPS)
+                || state.getBlock() instanceof NetherWartBlock
+                || state.getBlock() instanceof SweetBerryBushBlock;
+    }
+
+    private static boolean isBonemealFarmingTarget(BlockState state) {
+        return state.is(BlockTags.CROPS)
+                || state.is(BlockTags.SAPLINGS)
+                || state.getBlock() instanceof NetherWartBlock
+                || state.getBlock() instanceof SweetBerryBushBlock;
     }
 }

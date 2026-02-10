@@ -37,6 +37,7 @@ public final class EchoRegionCommand {
                                     int farm = memory != null ? memory.getFarmScore() : 0;
                                     long lastUpdated = memory != null ? memory.getLastUpdated() : 0L;
                                     long ticksAgo = lastUpdated > 0 ? Math.max(0, level.getGameTime() - lastUpdated) : 0L;
+                                    String dimension = level.dimension().identifier().toString();
 
                                     ChatFormatting stateColor = switch (state) {
                                         case SCARRED -> ChatFormatting.DARK_RED;
@@ -52,6 +53,7 @@ public final class EchoRegionCommand {
                                     Component message = Component.empty()
                                             .append(header)
                                             .append(Component.literal("\n> Chunk: " + chunkPos.x + ", " + chunkPos.z))
+                                            .append(Component.literal("\n> Dimension: " + dimension))
                                             .append(Component.literal("\n> State: "))
                                             .append(stateComponent)
                                             .append(Component.literal(" (dominant=" + dominant.getId() + ")"))
