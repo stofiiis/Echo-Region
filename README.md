@@ -17,6 +17,40 @@ Current: v0.3
 - Pebble + Ectoplasm items with tooltips
 - Region states: SCARRED, HAUNTED, WAR_TORN, CULTIVATED, SETTLED, BLIGHTED, TRAVELLED, EXPLOITED
 
+## Commands
+All commands are server-side. Config/debug/decay commands require gamemaster permissions.
+
+### Debug
+- `/echoregion here`
+  - Shows chunk position, dimension, RegionState, thresholds, local scores, aggregated 3x3 scores, and last update tick.
+- `/echoregion debug on`
+  - Enables full debug output for `/echoregion here`.
+- `/echoregion debug off`
+  - Limits `/echoregion here` to basic info (chunk/dimension/state).
+
+### Config
+- `/echoregion config get <key>`
+  - Prints the current value for a config key.
+- `/echoregion config set <key> <value>`
+  - Sets a config key at runtime and saves the config file.
+- `/echoregion config reload`
+  - Reloads the config from disk.
+- `/echoregion config reset [key]`
+  - Resets one key or all keys to defaults and saves the config file.
+
+Valid keys:
+`thresholdMining`, `thresholdCombat`, `thresholdDeath`, `thresholdFarm`,
+`thresholdBuild`, `thresholdFire`, `thresholdTravel`, `thresholdExploit`,
+`decayIntervalMinutes`, `decayMode`, `decayFlatAmount`, `decayPercent`,
+`scarredPebbleChance`, `hauntedEctoplasmChance`, `warTornStrengthChance`
+
+Notes:
+- `decayMode` accepts `FLAT` or `PERCENT`.
+
+### Decay
+- `/echoregion decay now`
+  - Immediately applies decay across all loaded levels using current config.
+
 ## Build and run
 ```bash
 ./gradlew runClient
