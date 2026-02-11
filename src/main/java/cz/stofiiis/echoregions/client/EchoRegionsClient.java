@@ -73,9 +73,18 @@ public final class EchoRegionsClient {
         for (HudLine line : lines) {
             maxWidth = Math.max(maxWidth, font.width(line.text()));
         }
-        int x = graphics.guiWidth() - maxWidth - 6;
-        int y = 6;
         int lineHeight = font.lineHeight + 2;
+        int totalHeight = lines.size() * lineHeight;
+        int padding = 4;
+        int x = graphics.guiWidth() - maxWidth - padding - 6;
+        int y = 6;
+
+        int bgLeft = x - padding;
+        int bgTop = y - padding;
+        int bgRight = x + maxWidth + padding;
+        int bgBottom = y + totalHeight + padding - 2;
+        graphics.fill(bgLeft, bgTop, bgRight, bgBottom, 0x66000000);
+
         for (HudLine line : lines) {
             graphics.drawString(font, line.text(), x, y, line.color(), false);
             y += lineHeight;
