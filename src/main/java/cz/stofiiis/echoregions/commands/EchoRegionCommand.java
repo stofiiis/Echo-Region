@@ -69,6 +69,8 @@ public final class EchoRegionCommand {
         register(entries, "negativeDecayPercent", EchoRegionsConfig.NEGATIVE_DECAY_PERCENT, ConfigType.DOUBLE);
         register(entries, "positiveDecayFlatAmount", EchoRegionsConfig.POSITIVE_DECAY_FLAT_AMOUNT, ConfigType.INT);
         register(entries, "positiveDecayPercent", EchoRegionsConfig.POSITIVE_DECAY_PERCENT, ConfigType.DOUBLE);
+        register(entries, "headlineKeepThresholdFactor", EchoRegionsConfig.HEADLINE_KEEP_FACTOR, ConfigType.DOUBLE);
+        register(entries, "headlineSwitchRatio", EchoRegionsConfig.HEADLINE_SWITCH_RATIO, ConfigType.DOUBLE);
         register(entries, "scarredPebbleChance", EchoRegionsConfig.SCARRED_PEBBLE_CHANCE, ConfigType.DOUBLE);
         register(entries, "hauntedEctoplasmChance", EchoRegionsConfig.HAUNTED_ECTOPLASM_CHANCE, ConfigType.DOUBLE);
         register(entries, "warTornStrengthChance", EchoRegionsConfig.WAR_TORN_STRENGTH_CHANCE, ConfigType.DOUBLE);
@@ -98,9 +100,11 @@ public final class EchoRegionCommand {
                                     RegionMemory memory = data.getMemory(regionPos);
                                     RegionState.AggregatedScores local = RegionState.localScores(data, regionPos);
                                     RegionState.AggregatedScores area = RegionState.aggregateAreaScores(data, regionPos);
-                                    RegionState state = RegionState.getState(area);
+                                    RegionState.HeadlineResult headline = RegionState.resolveHeadline(data, regionPos, area);
+                                    RegionState state = headline.state();
                                     RegionState.DominantScore dominant = RegionState.getDominant(area);
                                     var activeTags = RegionState.getActiveTags(area);
+                                    data.updateHeadline(regionPos, state.getId());
                                     long lastUpdated = memory != null ? memory.getLastUpdated() : 0L;
                                     long ticksAgo = lastUpdated > 0 ? Math.max(0, level.getGameTime() - lastUpdated) : 0L;
                                     String dimension = level.dimension().identifier().toString();
@@ -117,7 +121,7 @@ public final class EchoRegionCommand {
                                                     .append(Component.literal("\n> Dimension: " + dimension))
                                                     .append(Component.literal("\n> Headline: "))
                                                     .append(stateComponent)
-                                                    .append(Component.literal(" (dominant=" + dominant.getId() + ")"))
+                                                    .append(Component.literal(" (" + headline.reason() + ", dominant=" + dominant.getId() + ")"))
                                                     .append(Component.literal("\n> Active tags:"))
                                                     .append(buildActiveTags(activeTags))
                                                     .append(Component.literal("\n> Thresholds:"))
@@ -155,7 +159,7 @@ public final class EchoRegionCommand {
                                                     .append(Component.literal("\n> Dimension: " + dimension))
                                                     .append(Component.literal("\n> Headline: "))
                                                     .append(stateComponent)
-                                                    .append(Component.literal(" (dominant=" + dominant.getId() + ")"));
+                                                    .append(Component.literal(" (" + headline.reason() + ", dominant=" + dominant.getId() + ")"));
                                     source.sendSuccess(() -> message, false);
                                     return 1;
                                 }))
@@ -382,13 +386,22 @@ public final class EchoRegionCommand {
         if (tags.isEmpty()) {
             return Component.literal("\n  - none");
         }
+        java.util.List<RegionState.ActiveTag> sorted = tags.stream()
+                .sorted((a, b) -> Integer.compare(b.score(), a.score()))
+                .toList();
+        int shown = Math.min(3, sorted.size());
         MutableComponent component = Component.empty();
-        for (RegionState.ActiveTag tag : tags) {
+        for (int i = 0; i < shown; i++) {
+            RegionState.ActiveTag tag = sorted.get(i);
             Component stateName = Component.translatable("echoregions.state." + tag.state().getId())
                     .withStyle(getStateColor(tag.state()));
             component.append(Component.literal("\n  - "))
                     .append(stateName)
-                    .append(Component.literal(" (" + tag.intensity().name() + ")"));
+                    .append(Component.literal(" (" + tag.intensity().name() + ", score=" + tag.score() + ")"));
+        }
+        int remaining = sorted.size() - shown;
+        if (remaining > 0) {
+            component.append(Component.literal("\n  ...+" + remaining));
         }
         return component;
     }

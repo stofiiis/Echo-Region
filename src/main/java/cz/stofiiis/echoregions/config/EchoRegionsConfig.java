@@ -25,6 +25,8 @@ public final class EchoRegionsConfig {
     public static final ModConfigSpec.DoubleValue NEGATIVE_DECAY_PERCENT;
     public static final ModConfigSpec.IntValue POSITIVE_DECAY_FLAT_AMOUNT;
     public static final ModConfigSpec.DoubleValue POSITIVE_DECAY_PERCENT;
+    public static final ModConfigSpec.DoubleValue HEADLINE_KEEP_FACTOR;
+    public static final ModConfigSpec.DoubleValue HEADLINE_SWITCH_RATIO;
 
     public static final ModConfigSpec.DoubleValue SCARRED_PEBBLE_CHANCE;
     public static final ModConfigSpec.DoubleValue HAUNTED_ECTOPLASM_CHANCE;
@@ -79,6 +81,15 @@ public final class EchoRegionsConfig {
         POSITIVE_DECAY_PERCENT = BUILDER
                 .comment("Multiplier applied each decay for positive scores (0.0 - 1.0).")
                 .defineInRange("positivePercent", 0.98, 0.0, 1.0);
+        BUILDER.pop();
+
+        BUILDER.push("hysteresis");
+        HEADLINE_KEEP_FACTOR = BUILDER
+                .comment("Keep headline as long as its score stays above threshold * factor.")
+                .defineInRange("keepThresholdFactor", 0.8, 0.0, 2.0);
+        HEADLINE_SWITCH_RATIO = BUILDER
+                .comment("Switch headline if another score reaches currentScore * ratio.")
+                .defineInRange("switchRatio", 1.15, 1.0, 10.0);
         BUILDER.pop();
 
         BUILDER.push("drops");

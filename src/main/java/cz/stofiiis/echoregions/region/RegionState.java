@@ -2,6 +2,7 @@ package cz.stofiiis.echoregions.region;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 import cz.stofiiis.echoregions.config.EchoRegionsConfig;
 import cz.stofiiis.echoregions.data.RegionMemory;
@@ -29,11 +30,6 @@ public enum RegionState {
         return id;
     }
 
-    public static RegionState getState(RegionMemoryData data, RegionPos center) {
-        AggregatedScores scores = aggregateAreaScores(data, center);
-        return getState(scores);
-    }
-
     public static RegionState getState(AggregatedScores scores) {
         DominantScore dominant = getDominant(scores);
         if (dominant == DominantScore.NONE) {
@@ -47,8 +43,36 @@ public enum RegionState {
         return toRegionState(dominant);
     }
 
-    public static DominantScore getDominant(RegionMemoryData data, RegionPos center) {
-        return getDominant(aggregateAreaScores(data, center));
+    public static HeadlineResult resolveHeadline(RegionMemoryData data, RegionPos center, AggregatedScores areaScores) {
+        RegionMemory memory = data.getMemory(center);
+        RegionState previous = memory != null ? fromId(memory.getHeadlineId()) : null;
+        RegionState candidate = getState(areaScores);
+        if (previous == null || previous == NEUTRAL) {
+            String reason = "changed: no previous (candidateScore="
+                    + scoreFor(dominantForState(candidate), areaScores)
+                    + ", threshold=" + thresholdFor(dominantForState(candidate)) + ")";
+            return new HeadlineResult(candidate, reason, false);
+        }
+
+        DominantScore previousScore = dominantForState(previous);
+        int currentScore = scoreFor(previousScore, areaScores);
+        int threshold = thresholdFor(previousScore);
+        double keepFloor = threshold * EchoRegionsConfig.HEADLINE_KEEP_FACTOR.get();
+        int bestOther = bestOtherScore(previousScore, areaScores);
+        double switchTrigger = currentScore * EchoRegionsConfig.HEADLINE_SWITCH_RATIO.get();
+
+        boolean kept = currentScore >= keepFloor && bestOther < switchTrigger;
+        RegionState headline = kept ? previous : candidate;
+        String reason = String.format(
+                Locale.ROOT,
+                "%s: current=%d, keep>=%.2f, bestOther=%d, switch>=%.2f",
+                kept ? "kept" : "changed",
+                currentScore,
+                keepFloor,
+                bestOther,
+                switchTrigger
+        );
+        return new HeadlineResult(headline, reason, kept);
     }
 
     public static DominantScore getDominant(AggregatedScores scores) {
@@ -167,7 +191,7 @@ public enum RegionState {
             int value = scoreFor(score, scores);
             int threshold = thresholdFor(score);
             if (threshold <= 0 ? value > 0 : value >= threshold) {
-                tags.add(new ActiveTag(toRegionState(score), intensityFor(value, threshold)));
+                tags.add(new ActiveTag(toRegionState(score), intensityFor(value, threshold), value));
             }
         }
         return tags;
@@ -227,6 +251,14 @@ public enum RegionState {
         return EchoRegionsConfig.THRESHOLD_EXPLOIT.get();
     }
 
+    public static double getHeadlineKeepFactor() {
+        return EchoRegionsConfig.HEADLINE_KEEP_FACTOR.get();
+    }
+
+    public static double getHeadlineSwitchRatio() {
+        return EchoRegionsConfig.HEADLINE_SWITCH_RATIO.get();
+    }
+
     private static int scoreFor(DominantScore score, AggregatedScores scores) {
         return switch (score) {
             case MINING -> scores.mining();
@@ -252,6 +284,20 @@ public enum RegionState {
             case TRAVEL -> getThresholdTravel();
             case EXPLOIT -> getThresholdExploit();
             case NONE -> Integer.MAX_VALUE;
+        };
+    }
+
+    private static DominantScore dominantForState(RegionState state) {
+        return switch (state) {
+            case SCARRED -> DominantScore.MINING;
+            case WAR_TORN -> DominantScore.COMBAT;
+            case HAUNTED -> DominantScore.DEATH;
+            case CULTIVATED -> DominantScore.FARM;
+            case SETTLED -> DominantScore.BUILD;
+            case BLIGHTED -> DominantScore.FIRE;
+            case TRAVELLED -> DominantScore.TRAVEL;
+            case EXPLOITED -> DominantScore.EXPLOIT;
+            case NEUTRAL -> DominantScore.NONE;
         };
     }
 
@@ -284,13 +330,39 @@ public enum RegionState {
         return Intensity.LOW;
     }
 
+    private static int bestOtherScore(DominantScore current, AggregatedScores scores) {
+        int best = 0;
+        for (DominantScore score : DominantScore.values()) {
+            if (score == DominantScore.NONE || score == current) {
+                continue;
+            }
+            best = Math.max(best, scoreFor(score, scores));
+        }
+        return best;
+    }
+
+    public static RegionState fromId(String id) {
+        if (id == null) {
+            return null;
+        }
+        for (RegionState state : values()) {
+            if (state.id.equals(id)) {
+                return state;
+            }
+        }
+        return null;
+    }
+
     public enum Intensity {
         LOW,
         MED,
         HIGH
     }
 
-    public record ActiveTag(RegionState state, Intensity intensity) {
+    public record ActiveTag(RegionState state, Intensity intensity, int score) {
+    }
+
+    public record HeadlineResult(RegionState state, String reason, boolean kept) {
     }
 
     public record AggregatedScores(

@@ -13,7 +13,8 @@ public final class RegionMemory {
             Codec.INT.optionalFieldOf("fireScore", 0).forGetter(RegionMemory::getFireScore),
             Codec.INT.optionalFieldOf("travelScore", 0).forGetter(RegionMemory::getTravelScore),
             Codec.INT.optionalFieldOf("exploitScore", 0).forGetter(RegionMemory::getExploitScore),
-            Codec.LONG.optionalFieldOf("lastUpdated", 0L).forGetter(RegionMemory::getLastUpdated)
+            Codec.LONG.optionalFieldOf("lastUpdated", 0L).forGetter(RegionMemory::getLastUpdated),
+            Codec.STRING.optionalFieldOf("headline", "neutral").forGetter(RegionMemory::getHeadlineId)
     ).apply(instance, RegionMemory::new));
 
     private int miningScore;
@@ -25,9 +26,10 @@ public final class RegionMemory {
     private int travelScore;
     private int exploitScore;
     private long lastUpdated;
+    private String headlineId;
 
     public RegionMemory() {
-        this(0, 0, 0, 0, 0, 0, 0, 0, 0L);
+        this(0, 0, 0, 0, 0, 0, 0, 0, 0L, "neutral");
     }
 
     public RegionMemory(
@@ -41,6 +43,21 @@ public final class RegionMemory {
             int exploitScore,
             long lastUpdated
     ) {
+        this(miningScore, combatScore, deathScore, farmScore, buildScore, fireScore, travelScore, exploitScore, lastUpdated, "neutral");
+    }
+
+    public RegionMemory(
+            int miningScore,
+            int combatScore,
+            int deathScore,
+            int farmScore,
+            int buildScore,
+            int fireScore,
+            int travelScore,
+            int exploitScore,
+            long lastUpdated,
+            String headlineId
+    ) {
         this.miningScore = Math.max(0, miningScore);
         this.combatScore = Math.max(0, combatScore);
         this.deathScore = Math.max(0, deathScore);
@@ -50,6 +67,7 @@ public final class RegionMemory {
         this.travelScore = Math.max(0, travelScore);
         this.exploitScore = Math.max(0, exploitScore);
         this.lastUpdated = Math.max(0L, lastUpdated);
+        this.headlineId = headlineId == null ? "neutral" : headlineId;
     }
 
     public int getMiningScore() {
@@ -86,6 +104,19 @@ public final class RegionMemory {
 
     public long getLastUpdated() {
         return lastUpdated;
+    }
+
+    public String getHeadlineId() {
+        return headlineId;
+    }
+
+    boolean setHeadlineId(String headlineId) {
+        String next = headlineId == null ? "neutral" : headlineId;
+        if (next.equals(this.headlineId)) {
+            return false;
+        }
+        this.headlineId = next;
+        return true;
     }
 
     void addMining(int amount, long gameTime) {

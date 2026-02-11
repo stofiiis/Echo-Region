@@ -18,6 +18,7 @@ Current: v0.4
 - Pebble + Ectoplasm items with tooltips
 - Region states: SCARRED, HAUNTED, WAR_TORN, CULTIVATED, SETTLED, BLIGHTED, TRAVELLED, EXPLOITED
 - Multi-layer history: multiple active tags with intensity levels
+- Headline hysteresis for more stable state transitions
 
 ## Commands
 All commands are server-side. Config/debug/decay commands require gamemaster permissions.
@@ -46,6 +47,7 @@ Valid keys:
 `decayIntervalMinutes`, `decayMode`,
 `negativeDecayFlatAmount`, `negativeDecayPercent`,
 `positiveDecayFlatAmount`, `positiveDecayPercent`,
+`headlineKeepThresholdFactor`, `headlineSwitchRatio`,
 `scarredPebbleChance`, `hauntedEctoplasmChance`, `warTornStrengthChance`
 
 Notes:
