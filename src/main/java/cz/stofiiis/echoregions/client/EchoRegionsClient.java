@@ -50,12 +50,12 @@ public final class EchoRegionsClient {
         int headlineColor = ClientStateColors.colorForStateId(payload.headlineId());
 
         List<HudLine> lines = new ArrayList<>();
-        lines.add(new HudLine("[Echo Regions]", 0x55FFFF));
-        lines.add(new HudLine("Region: " + payload.regionX() + ", " + payload.regionZ() + " (" + dimension + ")", 0xFFFFFF));
+        lines.add(new HudLine("[Echo Regions]", 0xFF55FFFF));
+        lines.add(new HudLine("Region: " + payload.regionX() + ", " + payload.regionZ() + " (" + dimension + ")", 0xFFFFFFFF));
         lines.add(new HudLine("Headline: " + headlineName + " (" + headlineIntensity + ")", headlineColor));
 
         if (!payload.tags().isEmpty()) {
-            lines.add(new HudLine("Top tags:", 0xFFFFFF));
+            lines.add(new HudLine("Top tags:", 0xFFFFFFFF));
             for (HudStatePayload.TagSummary tag : payload.tags()) {
                 String name = net.minecraft.network.chat.Component
                         .translatable("echoregions.state." + tag.stateId())
@@ -65,9 +65,9 @@ public final class EchoRegionsClient {
                 lines.add(new HudLine(" - " + name + " (" + intensity + ")", color));
             }
         } else {
-            lines.add(new HudLine("Top tags: none", 0xAAAAAA));
+            lines.add(new HudLine("Top tags: none", 0xFFAAAAAA));
         }
-        lines.add(new HudLine("Total weight: " + payload.totalWeight(), 0xFFFFFF));
+        lines.add(new HudLine("Total weight: " + payload.totalWeight(), 0xFFFFFFFF));
 
         int maxWidth = 0;
         for (HudLine line : lines) {

@@ -6,20 +6,24 @@ public final class ClientStateColors {
 
     public static int colorForStateId(String id) {
         if (id == null) {
-            return 0xAAAAAA;
+            return argb(0xAAAAAA);
         }
         return switch (id) {
-            case "scarred" -> 0xAA0000;
-            case "haunted" -> 0xAA00AA;
-            case "war_torn" -> 0xFFAA00;
-            case "cultivated" -> 0x55FF55;
-            case "settled" -> 0x00AA00;
-            case "blighted" -> 0xFF5555;
-            case "travelled" -> 0x5555FF;
-            case "exploited" -> 0x00AAAA;
-            case "neutral" -> 0xAAAAAA;
-            default -> 0xFFFFFF;
+            case "scarred" -> argb(0xAA0000);
+            case "haunted" -> argb(0xAA00AA);
+            case "war_torn" -> argb(0xFFAA00);
+            case "cultivated" -> argb(0x55FF55);
+            case "settled" -> argb(0x00AA00);
+            case "blighted" -> argb(0xFF5555);
+            case "travelled" -> argb(0x5555FF);
+            case "exploited" -> argb(0x00AAAA);
+            case "neutral" -> argb(0xAAAAAA);
+            default -> argb(0xFFFFFF);
         };
+    }
+
+    private static int argb(int rgb) {
+        return 0xFF000000 | rgb;
     }
 
     public static String shortCodeForStateId(String id) {

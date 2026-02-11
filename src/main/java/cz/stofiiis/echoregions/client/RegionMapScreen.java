@@ -36,7 +36,7 @@ public class RegionMapScreen extends Screen {
         MapDataPayload payload = ClientDebugData.getMapPayload();
         Font font = Minecraft.getInstance().font;
         if (payload == null) {
-            graphics.drawString(font, "No map data.", 8, 8, 0xFFFFFF, false);
+            graphics.drawString(font, "No map data.", 8, 8, 0xFFFFFFFF, false);
             return;
         }
 
@@ -48,7 +48,7 @@ public class RegionMapScreen extends Screen {
         int centerIndex = radius;
 
         String header = "[Echo Regions Map] radius=" + radius;
-        graphics.drawString(font, header, 8, 8, 0xFFFFFF, false);
+        graphics.drawString(font, header, 8, 8, 0xFFFFFFFF, false);
 
         List<MapDataPayload.Cell> cells = payload.cells();
         int expected = size * size;
