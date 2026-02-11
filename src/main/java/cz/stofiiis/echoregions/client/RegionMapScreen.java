@@ -32,7 +32,7 @@ public class RegionMapScreen extends Screen {
 
     @Override
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-        this.renderBackground(graphics, mouseX, mouseY, partialTick);
+        graphics.fill(0, 0, graphics.guiWidth(), graphics.guiHeight(), 0x66000000);
         MapDataPayload payload = ClientDebugData.getMapPayload();
         Font font = Minecraft.getInstance().font;
         if (payload == null) {
