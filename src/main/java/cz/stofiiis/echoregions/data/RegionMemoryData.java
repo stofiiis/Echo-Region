@@ -73,6 +73,30 @@ public class RegionMemoryData extends SavedData {
         setDirty();
     }
 
+    public void addBuildScore(ChunkPos pos, int amount, long gameTime) {
+        RegionMemory memory = getOrCreate(pos);
+        memory.addBuild(amount, gameTime);
+        setDirty();
+    }
+
+    public void addFireScore(ChunkPos pos, int amount, long gameTime) {
+        RegionMemory memory = getOrCreate(pos);
+        memory.addFire(amount, gameTime);
+        setDirty();
+    }
+
+    public void addTravelScore(ChunkPos pos, int amount, long gameTime) {
+        RegionMemory memory = getOrCreate(pos);
+        memory.addTravel(amount, gameTime);
+        setDirty();
+    }
+
+    public void addExploitScore(ChunkPos pos, int amount, long gameTime) {
+        RegionMemory memory = getOrCreate(pos);
+        memory.addExploit(amount, gameTime);
+        setDirty();
+    }
+
     public void decayAllFlat(int amount, long gameTime) {
         decayAllInternal(memory -> memory.decayFlat(amount, gameTime));
     }

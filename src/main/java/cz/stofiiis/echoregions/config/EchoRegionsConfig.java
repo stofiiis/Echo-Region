@@ -14,6 +14,10 @@ public final class EchoRegionsConfig {
     public static final ModConfigSpec.IntValue THRESHOLD_COMBAT;
     public static final ModConfigSpec.IntValue THRESHOLD_DEATH;
     public static final ModConfigSpec.IntValue THRESHOLD_FARM;
+    public static final ModConfigSpec.IntValue THRESHOLD_BUILD;
+    public static final ModConfigSpec.IntValue THRESHOLD_FIRE;
+    public static final ModConfigSpec.IntValue THRESHOLD_TRAVEL;
+    public static final ModConfigSpec.IntValue THRESHOLD_EXPLOIT;
 
     public static final ModConfigSpec.IntValue DECAY_INTERVAL_MINUTES;
     public static final ModConfigSpec.EnumValue<DecayMode> DECAY_MODE;
@@ -40,6 +44,18 @@ public final class EchoRegionsConfig {
         THRESHOLD_FARM = BUILDER
                 .comment("Score required for CULTIVATED.")
                 .defineInRange("thresholdFarm", 10, 0, Integer.MAX_VALUE);
+        THRESHOLD_BUILD = BUILDER
+                .comment("Score required for SETTLED.")
+                .defineInRange("thresholdBuild", 10, 0, Integer.MAX_VALUE);
+        THRESHOLD_FIRE = BUILDER
+                .comment("Score required for BLIGHTED.")
+                .defineInRange("thresholdFire", 10, 0, Integer.MAX_VALUE);
+        THRESHOLD_TRAVEL = BUILDER
+                .comment("Score required for TRAVELLED.")
+                .defineInRange("thresholdTravel", 10, 0, Integer.MAX_VALUE);
+        THRESHOLD_EXPLOIT = BUILDER
+                .comment("Score required for EXPLOITED.")
+                .defineInRange("thresholdExploit", 10, 0, Integer.MAX_VALUE);
         BUILDER.pop();
 
         BUILDER.push("decay");

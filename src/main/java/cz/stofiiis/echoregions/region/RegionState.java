@@ -10,7 +10,11 @@ public enum RegionState {
     SCARRED("scarred"),
     HAUNTED("haunted"),
     WAR_TORN("war_torn"),
-    CULTIVATED("cultivated");
+    CULTIVATED("cultivated"),
+    SETTLED("settled"),
+    BLIGHTED("blighted"),
+    TRAVELLED("travelled"),
+    EXPLOITED("exploited");
 
     private final String id;
 
@@ -37,6 +41,10 @@ public enum RegionState {
             case COMBAT -> scores.combat();
             case DEATH -> scores.death();
             case FARM -> scores.farm();
+            case BUILD -> scores.build();
+            case FIRE -> scores.fire();
+            case TRAVEL -> scores.travel();
+            case EXPLOIT -> scores.exploit();
             case NONE -> 0;
         };
         int threshold = switch (dominant) {
@@ -44,6 +52,10 @@ public enum RegionState {
             case COMBAT -> getThresholdCombat();
             case DEATH -> getThresholdDeath();
             case FARM -> getThresholdFarm();
+            case BUILD -> getThresholdBuild();
+            case FIRE -> getThresholdFire();
+            case TRAVEL -> getThresholdTravel();
+            case EXPLOIT -> getThresholdExploit();
             case NONE -> Integer.MAX_VALUE;
         };
         if (dominantScore < threshold) {
@@ -54,6 +66,10 @@ public enum RegionState {
             case COMBAT -> WAR_TORN;
             case DEATH -> HAUNTED;
             case FARM -> CULTIVATED;
+            case BUILD -> SETTLED;
+            case FIRE -> BLIGHTED;
+            case TRAVEL -> TRAVELLED;
+            case EXPLOIT -> EXPLOITED;
             case NONE -> NEUTRAL;
         };
     }
@@ -63,7 +79,16 @@ public enum RegionState {
     }
 
     public static DominantScore getDominant(AggregatedScores scores) {
-        return getDominant(scores.mining(), scores.combat(), scores.death(), scores.farm());
+        return getDominant(
+                scores.mining(),
+                scores.combat(),
+                scores.death(),
+                scores.farm(),
+                scores.build(),
+                scores.fire(),
+                scores.travel(),
+                scores.exploit()
+        );
     }
 
     public static AggregatedScores aggregateScores(RegionMemoryData data, ChunkPos center) {
@@ -71,6 +96,10 @@ public enum RegionState {
         int combat = 0;
         int death = 0;
         int farm = 0;
+        int build = 0;
+        int fire = 0;
+        int travel = 0;
+        int exploit = 0;
         for (int dx = -1; dx <= 1; dx++) {
             for (int dz = -1; dz <= 1; dz++) {
                 ChunkPos pos = new ChunkPos(center.x + dx, center.z + dz);
@@ -82,16 +111,29 @@ public enum RegionState {
                 combat += memory.getCombatScore();
                 death += memory.getDeathScore();
                 farm += memory.getFarmScore();
+                build += memory.getBuildScore();
+                fire += memory.getFireScore();
+                travel += memory.getTravelScore();
+                exploit += memory.getExploitScore();
             }
         }
-        return new AggregatedScores(mining, combat, death, farm);
+        return new AggregatedScores(mining, combat, death, farm, build, fire, travel, exploit);
     }
 
-    private static DominantScore getDominant(int mining, int combat, int death, int farm) {
-        if (farm > mining && farm > combat && farm > death) {
-            return DominantScore.FARM;
-        }
-        int max = Math.max(mining, Math.max(combat, death));
+    private static DominantScore getDominant(
+            int mining,
+            int combat,
+            int death,
+            int farm,
+            int build,
+            int fire,
+            int travel,
+            int exploit
+    ) {
+        int max = Math.max(
+                Math.max(Math.max(mining, combat), Math.max(death, farm)),
+                Math.max(Math.max(build, fire), Math.max(travel, exploit))
+        );
         if (max <= 0) {
             return DominantScore.NONE;
         }
@@ -104,6 +146,21 @@ public enum RegionState {
         if (mining == max) {
             return DominantScore.MINING;
         }
+        if (farm == max) {
+            return DominantScore.FARM;
+        }
+        if (build == max) {
+            return DominantScore.BUILD;
+        }
+        if (fire == max) {
+            return DominantScore.FIRE;
+        }
+        if (travel == max) {
+            return DominantScore.TRAVEL;
+        }
+        if (exploit == max) {
+            return DominantScore.EXPLOIT;
+        }
         return DominantScore.NONE;
     }
 
@@ -112,7 +169,11 @@ public enum RegionState {
         MINING("mining"),
         COMBAT("combat"),
         DEATH("death"),
-        FARM("farm");
+        FARM("farm"),
+        BUILD("build"),
+        FIRE("fire"),
+        TRAVEL("travel"),
+        EXPLOIT("exploit");
 
         private final String id;
 
@@ -141,6 +202,31 @@ public enum RegionState {
         return EchoRegionsConfig.THRESHOLD_FARM.get();
     }
 
-    public record AggregatedScores(int mining, int combat, int death, int farm) {
+    public static int getThresholdBuild() {
+        return EchoRegionsConfig.THRESHOLD_BUILD.get();
+    }
+
+    public static int getThresholdFire() {
+        return EchoRegionsConfig.THRESHOLD_FIRE.get();
+    }
+
+    public static int getThresholdTravel() {
+        return EchoRegionsConfig.THRESHOLD_TRAVEL.get();
+    }
+
+    public static int getThresholdExploit() {
+        return EchoRegionsConfig.THRESHOLD_EXPLOIT.get();
+    }
+
+    public record AggregatedScores(
+            int mining,
+            int combat,
+            int death,
+            int farm,
+            int build,
+            int fire,
+            int travel,
+            int exploit
+    ) {
     }
 }
