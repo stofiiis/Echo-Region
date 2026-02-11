@@ -57,6 +57,14 @@ Notes:
 - `/echoregion decay now`
   - Immediately applies decay across all loaded levels using current config.
 
+## Testing checklist
+Minimal sanity checks after changes:
+1) Migration: open an old world and verify a single migration log entry appears once.
+2) Region mapping: cross a region border (every 8 chunks) and confirm scores write to a new region.
+3) Headline hysteresis: force a state above threshold, then reduce it below `threshold * keepFactor` and confirm the headline changes only when rules trigger.
+4) Active tags: verify top 3 are shown with intensity and the remainder is summarized as `...+N`.
+5) Asymmetric decay: set extreme negative/positive decay values, run `/echoregion decay now`, and confirm positive scores drop faster.
+
 ## Build and run
 ```bash
 ./gradlew runClient

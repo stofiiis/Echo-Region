@@ -64,14 +64,16 @@ public class RegionMemoryData extends SavedData {
         return regions.get(pos.toLong());
     }
 
-    public void updateHeadline(RegionPos pos, String headlineId) {
+    public boolean updateHeadline(RegionPos pos, String headlineId) {
         RegionMemory memory = regions.get(pos.toLong());
         if (memory == null) {
-            return;
+            return false;
         }
         if (memory.setHeadlineId(headlineId)) {
             setDirty();
+            return true;
         }
+        return false;
     }
 
     public void addMiningScore(RegionPos pos, int amount, long gameTime) {

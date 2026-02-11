@@ -13,6 +13,7 @@ import com.mojang.brigadier.builder.ArgumentBuilder;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.suggestion.SuggestionProvider;
 
+import cz.stofiiis.echoregions.EchoRegions;
 import cz.stofiiis.echoregions.config.EchoRegionsConfig;
 import cz.stofiiis.echoregions.data.RegionMemory;
 import cz.stofiiis.echoregions.data.RegionMemoryData;
@@ -104,10 +105,22 @@ public final class EchoRegionCommand {
                                     RegionState state = headline.state();
                                     RegionState.DominantScore dominant = RegionState.getDominant(area);
                                     var activeTags = RegionState.getActiveTags(area);
-                                    data.updateHeadline(regionPos, state.getId());
+                                    String previousHeadline = memory != null ? memory.getHeadlineId() : "neutral";
+                                    boolean headlineChanged = data.updateHeadline(regionPos, state.getId());
                                     long lastUpdated = memory != null ? memory.getLastUpdated() : 0L;
                                     long ticksAgo = lastUpdated > 0 ? Math.max(0, level.getGameTime() - lastUpdated) : 0L;
                                     String dimension = level.dimension().identifier().toString();
+                                    if (debugEnabled && headlineChanged) {
+                                        EchoRegions.LOGGER.info(
+                                                "Headline changed for region [{}, {}] in {}: {} -> {} ({})",
+                                                regionPos.x(),
+                                                regionPos.z(),
+                                                dimension,
+                                                previousHeadline,
+                                                state.getId(),
+                                                headline.reason()
+                                        );
+                                    }
 
                                     ChatFormatting stateColor = getStateColor(state);
 
