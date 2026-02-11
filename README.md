@@ -4,9 +4,9 @@ Echo Regions tracks local region memory (8x8 chunks) and derives a regional stat
 without changing biomes or worldgen. Effects and visuals are added via events only.
 
 ## Status
-Current: v0.4
+Current: v0.5
 
-## Features (v0.4)
+## Features (v0.5)
 - Server-side SavedData: RegionPos (8x8 chunks) -> RegionMemory
 - Mining/combat/death tracking
 - Farming tracking (bone meal, planting, harvest)
@@ -19,6 +19,7 @@ Current: v0.4
 - Region states: SCARRED, HAUNTED, WAR_TORN, CULTIVATED, SETTLED, BLIGHTED, TRAVELLED, EXPLOITED
 - Multi-layer history: multiple active tags with intensity levels
 - Headline hysteresis for more stable state transitions
+- Ambient cues (particles/sounds) for SCARRED/HAUNTED/WAR_TORN
 
 ## Commands
 All commands are server-side. Config/debug/decay commands require gamemaster permissions.
@@ -79,7 +80,6 @@ Minimal sanity checks after changes:
 - Package: `cz.stofiiis.echoregions`
 
 ## Roadmap
-- v0.5: ambient cues
 - v0.6: basic effects
 
 ## Backlog ideas
