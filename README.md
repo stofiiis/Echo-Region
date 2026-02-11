@@ -1,28 +1,32 @@
 # Echo Regions
 
-Echo Regions tracks local chunk memory (mining, combat, death) and derives a regional state
+Echo Regions tracks local region memory (8x8 chunks) and derives a regional state
 without changing biomes or worldgen. Effects and visuals are added via events only.
 
 ## Status
-Current: v0.3
+Current: v0.5
 
-## Features (v0.3)
-- Server-side SavedData: ChunkPos -> RegionMemory
+## Features (v0.5)
+- Server-side SavedData: RegionPos (8x8 chunks) -> RegionMemory
 - Mining/combat/death tracking
 - Farming tracking (bone meal, planting, harvest)
 - Building, fire, travel, and rare-mining tracking
 - Configurable thresholds + decay mode/interval
+- Asymmetric decay (negative scores linger longer than positive)
 - Score decay with pruning
-- Debug command: `/echoregion here` (local + 3x3 region sums)
+- Debug command: `/echoregion here` (local region + 3x3 region area)
 - Pebble + Ectoplasm items with tooltips
 - Region states: SCARRED, HAUNTED, WAR_TORN, CULTIVATED, SETTLED, BLIGHTED, TRAVELLED, EXPLOITED
+- Multi-layer history: multiple active tags with intensity levels
+- Headline hysteresis for more stable state transitions
+- Ambient cues (particles/sounds) for SCARRED/HAUNTED/WAR_TORN
 
 ## Commands
 All commands are server-side. Config/debug/decay commands require gamemaster permissions.
 
 ### Debug
 - `/echoregion here`
-  - Shows chunk position, dimension, RegionState, thresholds, local scores, aggregated 3x3 scores, and last update tick.
+  - Shows region position, dimension, headline state, active tags (with intensity), thresholds, local region scores, 3x3 region area scores, and last update tick.
 - `/echoregion debug on`
   - Enables full debug output for `/echoregion here`.
 - `/echoregion debug off`
@@ -41,7 +45,10 @@ All commands are server-side. Config/debug/decay commands require gamemaster per
 Valid keys:
 `thresholdMining`, `thresholdCombat`, `thresholdDeath`, `thresholdFarm`,
 `thresholdBuild`, `thresholdFire`, `thresholdTravel`, `thresholdExploit`,
-`decayIntervalMinutes`, `decayMode`, `decayFlatAmount`, `decayPercent`,
+`decayIntervalMinutes`, `decayMode`,
+`negativeDecayFlatAmount`, `negativeDecayPercent`,
+`positiveDecayFlatAmount`, `positiveDecayPercent`,
+`headlineKeepThresholdFactor`, `headlineSwitchRatio`,
 `scarredPebbleChance`, `hauntedEctoplasmChance`, `warTornStrengthChance`
 
 Notes:
@@ -50,6 +57,14 @@ Notes:
 ### Decay
 - `/echoregion decay now`
   - Immediately applies decay across all loaded levels using current config.
+
+## Testing checklist
+Minimal sanity checks after changes:
+1) Migration: open an old world and verify a single migration log entry appears once.
+2) Region mapping: cross a region border (every 8 chunks) and confirm scores write to a new region.
+3) Headline hysteresis: force a state above threshold, then reduce it below `threshold * keepFactor` and confirm the headline changes only when rules trigger.
+4) Active tags: verify top 3 are shown with intensity and the remainder is summarized as `...+N`.
+5) Asymmetric decay: set extreme negative/positive decay values, run `/echoregion decay now`, and confirm positive scores drop faster.
 
 ## Build and run
 ```bash
@@ -65,7 +80,7 @@ Notes:
 - Package: `cz.stofiiis.echoregions`
 
 ## Roadmap
-- v0.4: ambient cues + basic effects
+- v0.6: basic effects
 
 ## Backlog ideas
 - Ambient cues per region state
