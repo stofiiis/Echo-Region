@@ -21,8 +21,10 @@ public final class EchoRegionsConfig {
 
     public static final ModConfigSpec.IntValue DECAY_INTERVAL_MINUTES;
     public static final ModConfigSpec.EnumValue<DecayMode> DECAY_MODE;
-    public static final ModConfigSpec.IntValue DECAY_FLAT_AMOUNT;
-    public static final ModConfigSpec.DoubleValue DECAY_PERCENT;
+    public static final ModConfigSpec.IntValue NEGATIVE_DECAY_FLAT_AMOUNT;
+    public static final ModConfigSpec.DoubleValue NEGATIVE_DECAY_PERCENT;
+    public static final ModConfigSpec.IntValue POSITIVE_DECAY_FLAT_AMOUNT;
+    public static final ModConfigSpec.DoubleValue POSITIVE_DECAY_PERCENT;
 
     public static final ModConfigSpec.DoubleValue SCARRED_PEBBLE_CHANCE;
     public static final ModConfigSpec.DoubleValue HAUNTED_ECTOPLASM_CHANCE;
@@ -65,12 +67,18 @@ public final class EchoRegionsConfig {
         DECAY_MODE = BUILDER
                 .comment("Decay mode: FLAT subtracts a fixed amount; PERCENT multiplies by a factor.")
                 .defineEnum("mode", DecayMode.FLAT);
-        DECAY_FLAT_AMOUNT = BUILDER
-                .comment("Amount subtracted each decay when using FLAT mode.")
-                .defineInRange("flatAmount", 1, 0, Integer.MAX_VALUE);
-        DECAY_PERCENT = BUILDER
-                .comment("Multiplier applied each decay when using PERCENT mode (0.0 - 1.0).")
-                .defineInRange("percent", 0.99, 0.0, 1.0);
+        NEGATIVE_DECAY_FLAT_AMOUNT = BUILDER
+                .comment("Amount subtracted each decay for negative scores (mining/combat/death/fire/exploit).")
+                .defineInRange("negativeFlatAmount", 1, 0, Integer.MAX_VALUE);
+        NEGATIVE_DECAY_PERCENT = BUILDER
+                .comment("Multiplier applied each decay for negative scores (0.0 - 1.0).")
+                .defineInRange("negativePercent", 0.995, 0.0, 1.0);
+        POSITIVE_DECAY_FLAT_AMOUNT = BUILDER
+                .comment("Amount subtracted each decay for positive scores (farm/build/travel).")
+                .defineInRange("positiveFlatAmount", 2, 0, Integer.MAX_VALUE);
+        POSITIVE_DECAY_PERCENT = BUILDER
+                .comment("Multiplier applied each decay for positive scores (0.0 - 1.0).")
+                .defineInRange("positivePercent", 0.98, 0.0, 1.0);
         BUILDER.pop();
 
         BUILDER.push("drops");

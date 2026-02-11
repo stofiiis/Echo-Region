@@ -152,31 +152,32 @@ public final class RegionMemory {
         lastUpdated = gameTime;
     }
 
-    boolean decayFlat(int amount, long gameTime) {
-        if (amount <= 0) {
+    boolean decayFlat(int negativeAmount, int positiveAmount, long gameTime) {
+        if (negativeAmount <= 0 && positiveAmount <= 0) {
             return false;
         }
-        int newMining = Math.max(0, miningScore - amount);
-        int newCombat = Math.max(0, combatScore - amount);
-        int newDeath = Math.max(0, deathScore - amount);
-        int newFarm = Math.max(0, farmScore - amount);
-        int newBuild = Math.max(0, buildScore - amount);
-        int newFire = Math.max(0, fireScore - amount);
-        int newTravel = Math.max(0, travelScore - amount);
-        int newExploit = Math.max(0, exploitScore - amount);
+        int newMining = Math.max(0, miningScore - Math.max(0, negativeAmount));
+        int newCombat = Math.max(0, combatScore - Math.max(0, negativeAmount));
+        int newDeath = Math.max(0, deathScore - Math.max(0, negativeAmount));
+        int newFire = Math.max(0, fireScore - Math.max(0, negativeAmount));
+        int newExploit = Math.max(0, exploitScore - Math.max(0, negativeAmount));
+        int newFarm = Math.max(0, farmScore - Math.max(0, positiveAmount));
+        int newBuild = Math.max(0, buildScore - Math.max(0, positiveAmount));
+        int newTravel = Math.max(0, travelScore - Math.max(0, positiveAmount));
         return applyDecay(newMining, newCombat, newDeath, newFarm, newBuild, newFire, newTravel, newExploit, gameTime);
     }
 
-    boolean decayPercent(double factor, long gameTime) {
-        double clamped = Math.max(0.0, Math.min(1.0, factor));
-        int newMining = (int) Math.floor(miningScore * clamped);
-        int newCombat = (int) Math.floor(combatScore * clamped);
-        int newDeath = (int) Math.floor(deathScore * clamped);
-        int newFarm = (int) Math.floor(farmScore * clamped);
-        int newBuild = (int) Math.floor(buildScore * clamped);
-        int newFire = (int) Math.floor(fireScore * clamped);
-        int newTravel = (int) Math.floor(travelScore * clamped);
-        int newExploit = (int) Math.floor(exploitScore * clamped);
+    boolean decayPercent(double negativeFactor, double positiveFactor, long gameTime) {
+        double negativeClamped = Math.max(0.0, Math.min(1.0, negativeFactor));
+        double positiveClamped = Math.max(0.0, Math.min(1.0, positiveFactor));
+        int newMining = (int) Math.floor(miningScore * negativeClamped);
+        int newCombat = (int) Math.floor(combatScore * negativeClamped);
+        int newDeath = (int) Math.floor(deathScore * negativeClamped);
+        int newFire = (int) Math.floor(fireScore * negativeClamped);
+        int newExploit = (int) Math.floor(exploitScore * negativeClamped);
+        int newFarm = (int) Math.floor(farmScore * positiveClamped);
+        int newBuild = (int) Math.floor(buildScore * positiveClamped);
+        int newTravel = (int) Math.floor(travelScore * positiveClamped);
         return applyDecay(newMining, newCombat, newDeath, newFarm, newBuild, newFire, newTravel, newExploit, gameTime);
     }
 

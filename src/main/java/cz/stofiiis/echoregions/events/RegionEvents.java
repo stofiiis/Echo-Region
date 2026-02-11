@@ -8,6 +8,7 @@ import cz.stofiiis.echoregions.EchoRegions;
 import cz.stofiiis.echoregions.commands.EchoRegionCommand;
 import cz.stofiiis.echoregions.config.EchoRegionsConfig;
 import cz.stofiiis.echoregions.data.RegionMemoryData;
+import cz.stofiiis.echoregions.data.RegionPos;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
@@ -70,15 +71,16 @@ public class RegionEvents {
             return;
         }
         ChunkPos chunkPos = new ChunkPos(event.getPos());
+        RegionPos regionPos = RegionPos.fromChunk(chunkPos);
         RegionMemoryData data = RegionMemoryData.get(level);
         if (trackMining) {
-            data.addMiningScore(chunkPos, 1, level.getGameTime());
+            data.addMiningScore(regionPos, 1, level.getGameTime());
         }
         if (trackExploit) {
-            data.addExploitScore(chunkPos, 1, level.getGameTime());
+            data.addExploitScore(regionPos, 1, level.getGameTime());
         }
         if (trackFarm) {
-            data.addFarmScore(chunkPos, 1, level.getGameTime());
+            data.addFarmScore(regionPos, 1, level.getGameTime());
         }
     }
 
@@ -93,10 +95,10 @@ public class RegionEvents {
         }
         RegionMemoryData data = RegionMemoryData.get(level);
         if (entity instanceof Monster) {
-            data.addCombatScore(entity.chunkPosition(), 1, level.getGameTime());
+            data.addCombatScore(RegionPos.fromChunk(entity.chunkPosition()), 1, level.getGameTime());
         }
         if (entity instanceof net.minecraft.server.level.ServerPlayer) {
-            data.addDeathScore(entity.chunkPosition(), 1, level.getGameTime());
+            data.addDeathScore(RegionPos.fromChunk(entity.chunkPosition()), 1, level.getGameTime());
         }
     }
 
@@ -119,8 +121,9 @@ public class RegionEvents {
             return;
         }
         ChunkPos chunkPos = new ChunkPos(event.getPos());
+        RegionPos regionPos = RegionPos.fromChunk(chunkPos);
         RegionMemoryData data = RegionMemoryData.get(level);
-        data.addFarmScore(chunkPos, 2, level.getGameTime());
+        data.addFarmScore(regionPos, 2, level.getGameTime());
     }
 
     @SubscribeEvent
@@ -137,24 +140,26 @@ public class RegionEvents {
             BlockState replaced = event.getBlockSnapshot().getState();
             if (!replaced.isAir()) {
                 ChunkPos chunkPos = new ChunkPos(event.getPos());
+                RegionPos regionPos = RegionPos.fromChunk(chunkPos);
                 RegionMemoryData data = RegionMemoryData.get(level);
-                data.addFireScore(chunkPos, 1, level.getGameTime());
+                data.addFireScore(regionPos, 1, level.getGameTime());
             }
         }
         if (!(event.getEntity() instanceof Player)) {
             return;
         }
         ChunkPos chunkPos = new ChunkPos(event.getPos());
+        RegionPos regionPos = RegionPos.fromChunk(chunkPos);
         RegionMemoryData data = RegionMemoryData.get(level);
         if (isPlantedCrop(placed)) {
-            data.addFarmScore(chunkPos, 1, level.getGameTime());
+            data.addFarmScore(regionPos, 1, level.getGameTime());
             return;
         }
         if (isSapling(placed)) {
             return;
         }
         if (isBuildBlock(placed)) {
-            data.addBuildScore(chunkPos, 1, level.getGameTime());
+            data.addBuildScore(regionPos, 1, level.getGameTime());
         }
     }
 
@@ -165,8 +170,9 @@ public class RegionEvents {
         }
         BlockPos center = BlockPos.containing(event.getExplosion().center());
         ChunkPos chunkPos = new ChunkPos(center);
+        RegionPos regionPos = RegionPos.fromChunk(chunkPos);
         RegionMemoryData data = RegionMemoryData.get(level);
-        data.addFireScore(chunkPos, 1, level.getGameTime());
+        data.addFireScore(regionPos, 1, level.getGameTime());
     }
 
     @SubscribeEvent
@@ -183,7 +189,7 @@ public class RegionEvents {
         }
         lastChunkByPlayer.put(serverPlayer.getUUID(), current);
         RegionMemoryData data = RegionMemoryData.get(level);
-        data.addTravelScore(current.pos(), 1, level.getGameTime());
+        data.addTravelScore(RegionPos.fromChunk(current.pos()), 1, level.getGameTime());
     }
 
     @SubscribeEvent
@@ -203,9 +209,17 @@ public class RegionEvents {
         for (ServerLevel level : server.getAllLevels()) {
             RegionMemoryData data = RegionMemoryData.get(level);
             if (mode == EchoRegionsConfig.DecayMode.PERCENT) {
-                data.decayAllPercent(EchoRegionsConfig.DECAY_PERCENT.get(), level.getGameTime());
+                data.decayAllPercent(
+                        EchoRegionsConfig.NEGATIVE_DECAY_PERCENT.get(),
+                        EchoRegionsConfig.POSITIVE_DECAY_PERCENT.get(),
+                        level.getGameTime()
+                );
             } else {
-                data.decayAllFlat(EchoRegionsConfig.DECAY_FLAT_AMOUNT.get(), level.getGameTime());
+                data.decayAllFlat(
+                        EchoRegionsConfig.NEGATIVE_DECAY_FLAT_AMOUNT.get(),
+                        EchoRegionsConfig.POSITIVE_DECAY_FLAT_AMOUNT.get(),
+                        level.getGameTime()
+                );
             }
         }
     }

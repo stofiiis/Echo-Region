@@ -16,11 +16,13 @@ import com.mojang.brigadier.suggestion.SuggestionProvider;
 import cz.stofiiis.echoregions.config.EchoRegionsConfig;
 import cz.stofiiis.echoregions.data.RegionMemory;
 import cz.stofiiis.echoregions.data.RegionMemoryData;
+import cz.stofiiis.echoregions.data.RegionPos;
 import cz.stofiiis.echoregions.region.RegionState;
 import net.minecraft.ChatFormatting;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -63,8 +65,10 @@ public final class EchoRegionCommand {
         register(entries, "thresholdExploit", EchoRegionsConfig.THRESHOLD_EXPLOIT, ConfigType.INT);
         register(entries, "decayIntervalMinutes", EchoRegionsConfig.DECAY_INTERVAL_MINUTES, ConfigType.INT);
         register(entries, "decayMode", EchoRegionsConfig.DECAY_MODE, ConfigType.ENUM);
-        register(entries, "decayFlatAmount", EchoRegionsConfig.DECAY_FLAT_AMOUNT, ConfigType.INT);
-        register(entries, "decayPercent", EchoRegionsConfig.DECAY_PERCENT, ConfigType.DOUBLE);
+        register(entries, "negativeDecayFlatAmount", EchoRegionsConfig.NEGATIVE_DECAY_FLAT_AMOUNT, ConfigType.INT);
+        register(entries, "negativeDecayPercent", EchoRegionsConfig.NEGATIVE_DECAY_PERCENT, ConfigType.DOUBLE);
+        register(entries, "positiveDecayFlatAmount", EchoRegionsConfig.POSITIVE_DECAY_FLAT_AMOUNT, ConfigType.INT);
+        register(entries, "positiveDecayPercent", EchoRegionsConfig.POSITIVE_DECAY_PERCENT, ConfigType.DOUBLE);
         register(entries, "scarredPebbleChance", EchoRegionsConfig.SCARRED_PEBBLE_CHANCE, ConfigType.DOUBLE);
         register(entries, "hauntedEctoplasmChance", EchoRegionsConfig.HAUNTED_ECTOPLASM_CHANCE, ConfigType.DOUBLE);
         register(entries, "warTornStrengthChance", EchoRegionsConfig.WAR_TORN_STRENGTH_CHANCE, ConfigType.DOUBLE);
@@ -89,34 +93,19 @@ public final class EchoRegionCommand {
                                     ServerPlayer player = source.getPlayerOrException();
                                     ServerLevel level = source.getLevel();
                                     ChunkPos chunkPos = new ChunkPos(player.blockPosition());
+                                    RegionPos regionPos = RegionPos.fromChunk(chunkPos);
                                     RegionMemoryData data = RegionMemoryData.get(level);
-                                    RegionMemory memory = data.getMemory(chunkPos);
-                                    RegionState.AggregatedScores aggregated = RegionState.aggregateScores(data, chunkPos);
-                                    RegionState state = RegionState.getState(aggregated);
-                                    RegionState.DominantScore dominant = RegionState.getDominant(aggregated);
-                                    int mining = memory != null ? memory.getMiningScore() : 0;
-                                    int combat = memory != null ? memory.getCombatScore() : 0;
-                                    int death = memory != null ? memory.getDeathScore() : 0;
-                                    int farm = memory != null ? memory.getFarmScore() : 0;
-                                    int build = memory != null ? memory.getBuildScore() : 0;
-                                    int fire = memory != null ? memory.getFireScore() : 0;
-                                    int travel = memory != null ? memory.getTravelScore() : 0;
-                                    int exploit = memory != null ? memory.getExploitScore() : 0;
+                                    RegionMemory memory = data.getMemory(regionPos);
+                                    RegionState.AggregatedScores local = RegionState.localScores(data, regionPos);
+                                    RegionState.AggregatedScores area = RegionState.aggregateAreaScores(data, regionPos);
+                                    RegionState state = RegionState.getState(area);
+                                    RegionState.DominantScore dominant = RegionState.getDominant(area);
+                                    var activeTags = RegionState.getActiveTags(area);
                                     long lastUpdated = memory != null ? memory.getLastUpdated() : 0L;
                                     long ticksAgo = lastUpdated > 0 ? Math.max(0, level.getGameTime() - lastUpdated) : 0L;
                                     String dimension = level.dimension().identifier().toString();
 
-                                    ChatFormatting stateColor = switch (state) {
-                                        case SCARRED -> ChatFormatting.DARK_RED;
-                                        case HAUNTED -> ChatFormatting.DARK_PURPLE;
-                                        case WAR_TORN -> ChatFormatting.GOLD;
-                                        case NEUTRAL -> ChatFormatting.GRAY;
-                                        case CULTIVATED -> ChatFormatting.GREEN;
-                                        case SETTLED -> ChatFormatting.DARK_GREEN;
-                                        case BLIGHTED -> ChatFormatting.RED;
-                                        case TRAVELLED -> ChatFormatting.BLUE;
-                                        case EXPLOITED -> ChatFormatting.DARK_AQUA;
-                                    };
+                                    ChatFormatting stateColor = getStateColor(state);
 
                                     Component header = Component.literal("[EchoRegions]").withStyle(ChatFormatting.AQUA);
                                     Component stateComponent = Component.translatable("echoregions.state." + state.getId()).withStyle(stateColor);
@@ -124,11 +113,13 @@ public final class EchoRegionCommand {
                                     Component message = debugEnabled
                                             ? Component.empty()
                                                     .append(header)
-                                                    .append(Component.literal("\n> Chunk: " + chunkPos.x + ", " + chunkPos.z))
+                                                    .append(Component.literal("\n> Region: " + regionPos.x() + ", " + regionPos.z()))
                                                     .append(Component.literal("\n> Dimension: " + dimension))
-                                                    .append(Component.literal("\n> State: "))
+                                                    .append(Component.literal("\n> Headline: "))
                                                     .append(stateComponent)
                                                     .append(Component.literal(" (dominant=" + dominant.getId() + ")"))
+                                                    .append(Component.literal("\n> Active tags:"))
+                                                    .append(buildActiveTags(activeTags))
                                                     .append(Component.literal("\n> Thresholds:"))
                                                     .append(Component.literal("\n  - mining=" + RegionState.getThresholdMining()))
                                                     .append(Component.literal("\n  - combat=" + RegionState.getThresholdCombat()))
@@ -138,31 +129,31 @@ public final class EchoRegionCommand {
                                                     .append(Component.literal("\n  - fire=" + RegionState.getThresholdFire()))
                                                     .append(Component.literal("\n  - travel=" + RegionState.getThresholdTravel()))
                                                     .append(Component.literal("\n  - exploit=" + RegionState.getThresholdExploit()))
-                                                    .append(Component.literal("\n\nLocal (chunk):"))
-                                                    .append(Component.literal("\n  - mining: " + mining))
-                                                    .append(Component.literal("\n  - combat: " + combat))
-                                                    .append(Component.literal("\n  - death: " + death))
-                                                    .append(Component.literal("\n  - farm: " + farm))
-                                                    .append(Component.literal("\n  - build: " + build))
-                                                    .append(Component.literal("\n  - fire: " + fire))
-                                                    .append(Component.literal("\n  - travel: " + travel))
-                                                    .append(Component.literal("\n  - exploit: " + exploit))
-                                                    .append(Component.literal("\n\nRegion (3x3):"))
-                                                    .append(Component.literal("\n  - mining: " + aggregated.mining()))
-                                                    .append(Component.literal("\n  - combat: " + aggregated.combat()))
-                                                    .append(Component.literal("\n  - death: " + aggregated.death()))
-                                                    .append(Component.literal("\n  - farm: " + aggregated.farm()))
-                                                    .append(Component.literal("\n  - build: " + aggregated.build()))
-                                                    .append(Component.literal("\n  - fire: " + aggregated.fire()))
-                                                    .append(Component.literal("\n  - travel: " + aggregated.travel()))
-                                                    .append(Component.literal("\n  - exploit: " + aggregated.exploit()))
+                                                    .append(Component.literal("\n\nLocal Region:"))
+                                                    .append(Component.literal("\n  - mining: " + local.mining()))
+                                                    .append(Component.literal("\n  - combat: " + local.combat()))
+                                                    .append(Component.literal("\n  - death: " + local.death()))
+                                                    .append(Component.literal("\n  - farm: " + local.farm()))
+                                                    .append(Component.literal("\n  - build: " + local.build()))
+                                                    .append(Component.literal("\n  - fire: " + local.fire()))
+                                                    .append(Component.literal("\n  - travel: " + local.travel()))
+                                                    .append(Component.literal("\n  - exploit: " + local.exploit()))
+                                                    .append(Component.literal("\n\nArea (3x3 regions):"))
+                                                    .append(Component.literal("\n  - mining: " + area.mining()))
+                                                    .append(Component.literal("\n  - combat: " + area.combat()))
+                                                    .append(Component.literal("\n  - death: " + area.death()))
+                                                    .append(Component.literal("\n  - farm: " + area.farm()))
+                                                    .append(Component.literal("\n  - build: " + area.build()))
+                                                    .append(Component.literal("\n  - fire: " + area.fire()))
+                                                    .append(Component.literal("\n  - travel: " + area.travel()))
+                                                    .append(Component.literal("\n  - exploit: " + area.exploit()))
                                                     .append(Component.literal("\n\nDecay:"))
                                                     .append(Component.literal("\n  - lastUpdated: " + lastUpdated + " (ago " + ticksAgo + " ticks)"))
                                             : Component.empty()
                                                     .append(header)
-                                                    .append(Component.literal("\n> Chunk: " + chunkPos.x + ", " + chunkPos.z))
+                                                    .append(Component.literal("\n> Region: " + regionPos.x() + ", " + regionPos.z()))
                                                     .append(Component.literal("\n> Dimension: " + dimension))
-                                                    .append(Component.literal("\n> State: "))
+                                                    .append(Component.literal("\n> Headline: "))
                                                     .append(stateComponent)
                                                     .append(Component.literal(" (dominant=" + dominant.getId() + ")"));
                                     source.sendSuccess(() -> message, false);
@@ -221,16 +212,23 @@ public final class EchoRegionCommand {
                     CommandSourceStack source = context.getSource();
                     MinecraftServer server = source.getServer();
                     EchoRegionsConfig.DecayMode mode = EchoRegionsConfig.DECAY_MODE.get();
-                    int intervalTicks = Math.max(1, EchoRegionsConfig.DECAY_INTERVAL_MINUTES.get()) * 20 * 60;
                     for (ServerLevel level : server.getAllLevels()) {
                         RegionMemoryData data = RegionMemoryData.get(level);
                         if (mode == EchoRegionsConfig.DecayMode.PERCENT) {
-                            data.decayAllPercent(EchoRegionsConfig.DECAY_PERCENT.get(), level.getGameTime());
+                            data.decayAllPercent(
+                                    EchoRegionsConfig.NEGATIVE_DECAY_PERCENT.get(),
+                                    EchoRegionsConfig.POSITIVE_DECAY_PERCENT.get(),
+                                    level.getGameTime()
+                            );
                         } else {
-                            data.decayAllFlat(EchoRegionsConfig.DECAY_FLAT_AMOUNT.get(), level.getGameTime());
+                            data.decayAllFlat(
+                                    EchoRegionsConfig.NEGATIVE_DECAY_FLAT_AMOUNT.get(),
+                                    EchoRegionsConfig.POSITIVE_DECAY_FLAT_AMOUNT.get(),
+                                    level.getGameTime()
+                            );
                         }
                     }
-                    source.sendSuccess(() -> Component.literal("Decay applied (interval " + intervalTicks + " ticks)."), true);
+                    source.sendSuccess(() -> Component.literal("Decay applied."), true);
                     return 1;
                 }));
     }
@@ -364,5 +362,34 @@ public final class EchoRegionCommand {
             return null;
         }
         return CONFIG_KEYS.get(keyInput.toLowerCase(Locale.ROOT));
+    }
+
+    private static ChatFormatting getStateColor(RegionState state) {
+        return switch (state) {
+            case SCARRED -> ChatFormatting.DARK_RED;
+            case HAUNTED -> ChatFormatting.DARK_PURPLE;
+            case WAR_TORN -> ChatFormatting.GOLD;
+            case NEUTRAL -> ChatFormatting.GRAY;
+            case CULTIVATED -> ChatFormatting.GREEN;
+            case SETTLED -> ChatFormatting.DARK_GREEN;
+            case BLIGHTED -> ChatFormatting.RED;
+            case TRAVELLED -> ChatFormatting.BLUE;
+            case EXPLOITED -> ChatFormatting.DARK_AQUA;
+        };
+    }
+
+    private static Component buildActiveTags(java.util.List<RegionState.ActiveTag> tags) {
+        if (tags.isEmpty()) {
+            return Component.literal("\n  - none");
+        }
+        MutableComponent component = Component.empty();
+        for (RegionState.ActiveTag tag : tags) {
+            Component stateName = Component.translatable("echoregions.state." + tag.state().getId())
+                    .withStyle(getStateColor(tag.state()));
+            component.append(Component.literal("\n  - "))
+                    .append(stateName)
+                    .append(Component.literal(" (" + tag.intensity().name() + ")"));
+        }
+        return component;
     }
 }

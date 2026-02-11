@@ -1,28 +1,30 @@
 # Echo Regions
 
-Echo Regions tracks local chunk memory (mining, combat, death) and derives a regional state
+Echo Regions tracks local region memory (8x8 chunks) and derives a regional state
 without changing biomes or worldgen. Effects and visuals are added via events only.
 
 ## Status
-Current: v0.3
+Current: v0.4
 
-## Features (v0.3)
-- Server-side SavedData: ChunkPos -> RegionMemory
+## Features (v0.4)
+- Server-side SavedData: RegionPos (8x8 chunks) -> RegionMemory
 - Mining/combat/death tracking
 - Farming tracking (bone meal, planting, harvest)
 - Building, fire, travel, and rare-mining tracking
 - Configurable thresholds + decay mode/interval
+- Asymmetric decay (negative scores linger longer than positive)
 - Score decay with pruning
-- Debug command: `/echoregion here` (local + 3x3 region sums)
+- Debug command: `/echoregion here` (local region + 3x3 region area)
 - Pebble + Ectoplasm items with tooltips
 - Region states: SCARRED, HAUNTED, WAR_TORN, CULTIVATED, SETTLED, BLIGHTED, TRAVELLED, EXPLOITED
+- Multi-layer history: multiple active tags with intensity levels
 
 ## Commands
 All commands are server-side. Config/debug/decay commands require gamemaster permissions.
 
 ### Debug
 - `/echoregion here`
-  - Shows chunk position, dimension, RegionState, thresholds, local scores, aggregated 3x3 scores, and last update tick.
+  - Shows region position, dimension, headline state, active tags (with intensity), thresholds, local region scores, 3x3 region area scores, and last update tick.
 - `/echoregion debug on`
   - Enables full debug output for `/echoregion here`.
 - `/echoregion debug off`
@@ -41,7 +43,9 @@ All commands are server-side. Config/debug/decay commands require gamemaster per
 Valid keys:
 `thresholdMining`, `thresholdCombat`, `thresholdDeath`, `thresholdFarm`,
 `thresholdBuild`, `thresholdFire`, `thresholdTravel`, `thresholdExploit`,
-`decayIntervalMinutes`, `decayMode`, `decayFlatAmount`, `decayPercent`,
+`decayIntervalMinutes`, `decayMode`,
+`negativeDecayFlatAmount`, `negativeDecayPercent`,
+`positiveDecayFlatAmount`, `positiveDecayPercent`,
 `scarredPebbleChance`, `hauntedEctoplasmChance`, `warTornStrengthChance`
 
 Notes:
@@ -65,7 +69,8 @@ Notes:
 - Package: `cz.stofiiis.echoregions`
 
 ## Roadmap
-- v0.4: ambient cues + basic effects
+- v0.5: ambient cues
+- v0.6: basic effects
 
 ## Backlog ideas
 - Ambient cues per region state
