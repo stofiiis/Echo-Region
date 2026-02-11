@@ -10,11 +10,14 @@ import java.util.Set;
 
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.builder.ArgumentBuilder;
+import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.suggestion.SuggestionProvider;
 
 import cz.stofiiis.echoregions.EchoRegions;
 import cz.stofiiis.echoregions.config.EchoRegionsConfig;
+import cz.stofiiis.echoregions.debug.DebugOverlaySync;
+import cz.stofiiis.echoregions.debug.DebugOverlayTracker;
 import cz.stofiiis.echoregions.data.RegionMemory;
 import cz.stofiiis.echoregions.data.RegionMemoryData;
 import cz.stofiiis.echoregions.data.RegionPos;
@@ -35,11 +38,13 @@ public final class EchoRegionCommand {
     }
 
     private static boolean debugEnabled = true;
+    private static final int MAX_MAP_RADIUS = 8;
 
     private enum ConfigType {
         INT,
         DOUBLE,
-        ENUM
+        ENUM,
+        BOOLEAN
     }
 
     private record ConfigEntry(String key, ModConfigSpec.ConfigValue<?> value, ConfigType type) {
@@ -72,6 +77,12 @@ public final class EchoRegionCommand {
         register(entries, "positiveDecayPercent", EchoRegionsConfig.POSITIVE_DECAY_PERCENT, ConfigType.DOUBLE);
         register(entries, "headlineKeepThresholdFactor", EchoRegionsConfig.HEADLINE_KEEP_FACTOR, ConfigType.DOUBLE);
         register(entries, "headlineSwitchRatio", EchoRegionsConfig.HEADLINE_SWITCH_RATIO, ConfigType.DOUBLE);
+        register(entries, "headlineMinDurationMinutes", EchoRegionsConfig.MIN_HEADLINE_DURATION_MINUTES, ConfigType.INT);
+        register(entries, "residualEnabled", EchoRegionsConfig.RESIDUAL_ENABLED, ConfigType.BOOLEAN);
+        register(entries, "residualNegativePercent", EchoRegionsConfig.RESIDUAL_NEGATIVE_PERCENT, ConfigType.DOUBLE);
+        register(entries, "residualPositivePercent", EchoRegionsConfig.RESIDUAL_POSITIVE_PERCENT, ConfigType.DOUBLE);
+        register(entries, "residualMinFloor", EchoRegionsConfig.RESIDUAL_MIN_FLOOR, ConfigType.INT);
+        register(entries, "residualAffectsHeadline", EchoRegionsConfig.RESIDUAL_AFFECTS_HEADLINE, ConfigType.BOOLEAN);
         register(entries, "scarredPebbleChance", EchoRegionsConfig.SCARRED_PEBBLE_CHANCE, ConfigType.DOUBLE);
         register(entries, "hauntedEctoplasmChance", EchoRegionsConfig.HAUNTED_ECTOPLASM_CHANCE, ConfigType.DOUBLE);
         register(entries, "warTornStrengthChance", EchoRegionsConfig.WAR_TORN_STRENGTH_CHANCE, ConfigType.DOUBLE);
@@ -95,20 +106,25 @@ public final class EchoRegionCommand {
                                     CommandSourceStack source = context.getSource();
                                     ServerPlayer player = source.getPlayerOrException();
                                     ServerLevel level = source.getLevel();
+                                    long gameTime = level.getGameTime();
                                     ChunkPos chunkPos = new ChunkPos(player.blockPosition());
                                     RegionPos regionPos = RegionPos.fromChunk(chunkPos);
                                     RegionMemoryData data = RegionMemoryData.get(level);
                                     RegionMemory memory = data.getMemory(regionPos);
                                     RegionState.AggregatedScores local = RegionState.localScores(data, regionPos);
                                     RegionState.AggregatedScores area = RegionState.aggregateAreaScores(data, regionPos);
-                                    RegionState.HeadlineResult headline = RegionState.resolveHeadline(data, regionPos, area);
+                                    RegionState.AggregatedScores areaMax = RegionState.aggregateAreaMaxScores(data, regionPos);
+                                    RegionState.AggregatedScores areaFloor = RegionState.aggregateAreaFloorScores(data, regionPos);
+                                    RegionState.AggregatedScores headlineScores = RegionState.aggregateAreaScoresForHeadline(data, regionPos);
+                                    RegionState.HeadlineResult headline = RegionState.resolveHeadline(data, regionPos, headlineScores, gameTime);
                                     RegionState state = headline.state();
-                                    RegionState.DominantScore dominant = RegionState.getDominant(area);
-                                    var activeTags = RegionState.getActiveTags(area);
+                                    RegionState.DominantScore dominant = RegionState.getDominant(headlineScores);
+                                    RegionState.Intensity headlineIntensity = RegionState.intensityForState(state, headlineScores);
+                                    var tagSnapshots = RegionState.buildTagSnapshots(area, areaMax, areaFloor);
                                     String previousHeadline = memory != null ? memory.getHeadlineId() : "neutral";
-                                    boolean headlineChanged = data.updateHeadline(regionPos, state.getId());
+                                    boolean headlineChanged = data.updateHeadline(regionPos, state.getId(), gameTime);
                                     long lastUpdated = memory != null ? memory.getLastUpdated() : 0L;
-                                    long ticksAgo = lastUpdated > 0 ? Math.max(0, level.getGameTime() - lastUpdated) : 0L;
+                                    long ticksAgo = lastUpdated > 0 ? Math.max(0, gameTime - lastUpdated) : 0L;
                                     String dimension = level.dimension().identifier().toString();
                                     if (debugEnabled && headlineChanged) {
                                         EchoRegions.LOGGER.info(
@@ -134,9 +150,15 @@ public final class EchoRegionCommand {
                                                     .append(Component.literal("\n> Dimension: " + dimension))
                                                     .append(Component.literal("\n> Headline: "))
                                                     .append(stateComponent)
-                                                    .append(Component.literal(" (" + headline.reason() + ", dominant=" + dominant.getId() + ")"))
-                                                    .append(Component.literal("\n> Active tags:"))
-                                                    .append(buildActiveTags(activeTags))
+                                                    .append(Component.literal(" (" + headlineIntensity.name() + ", " + headline.reason() + ", dominant=" + dominant.getId() + ")"))
+                                                    .append(Component.literal("\n> Top tags:"))
+                                                    .append(buildTopTags(tagSnapshots))
+                                                    .append(Component.literal("\n> Residual:"))
+                                                    .append(Component.literal("\n  - enabled=" + EchoRegionsConfig.RESIDUAL_ENABLED.get()))
+                                                    .append(Component.literal("\n  - negativePercent=" + EchoRegionsConfig.RESIDUAL_NEGATIVE_PERCENT.get()))
+                                                    .append(Component.literal("\n  - positivePercent=" + EchoRegionsConfig.RESIDUAL_POSITIVE_PERCENT.get()))
+                                                    .append(Component.literal("\n  - minFloor=" + EchoRegionsConfig.RESIDUAL_MIN_FLOOR.get()))
+                                                    .append(Component.literal("\n  - affectsHeadline=" + EchoRegionsConfig.RESIDUAL_AFFECTS_HEADLINE.get()))
                                                     .append(Component.literal("\n> Thresholds:"))
                                                     .append(Component.literal("\n  - mining=" + RegionState.getThresholdMining()))
                                                     .append(Component.literal("\n  - combat=" + RegionState.getThresholdCombat()))
@@ -172,12 +194,14 @@ public final class EchoRegionCommand {
                                                     .append(Component.literal("\n> Dimension: " + dimension))
                                                     .append(Component.literal("\n> Headline: "))
                                                     .append(stateComponent)
-                                                    .append(Component.literal(" (" + headline.reason() + ", dominant=" + dominant.getId() + ")"));
+                                                    .append(Component.literal(" (" + headlineIntensity.name() + ")"));
                                     source.sendSuccess(() -> message, false);
                                     return 1;
                                 }))
                         .then(configCommand())
                         .then(debugCommand())
+                        .then(hudCommand())
+                        .then(mapCommand())
                         .then(decayCommand())
         );
     }
@@ -220,6 +244,37 @@ public final class EchoRegionCommand {
                     context.getSource().sendSuccess(() -> Component.literal("EchoRegions debug output disabled."), true);
                     return 1;
                 }));
+    }
+
+    private static ArgumentBuilder<CommandSourceStack, ?> hudCommand() {
+        return Commands.literal("hud")
+                .then(Commands.literal("on").executes(context -> {
+                    ServerPlayer player = context.getSource().getPlayerOrException();
+                    DebugOverlayTracker.setHudEnabled(player, true);
+                    DebugOverlaySync.sendHudUpdate(player);
+                    context.getSource().sendSuccess(() -> Component.literal("EchoRegions HUD enabled."), true);
+                    return 1;
+                }))
+                .then(Commands.literal("off").executes(context -> {
+                    ServerPlayer player = context.getSource().getPlayerOrException();
+                    DebugOverlayTracker.setHudEnabled(player, false);
+                    DebugOverlaySync.sendHudDisabled(player);
+                    context.getSource().sendSuccess(() -> Component.literal("EchoRegions HUD disabled."), true);
+                    return 1;
+                }));
+    }
+
+    private static ArgumentBuilder<CommandSourceStack, ?> mapCommand() {
+        return Commands.literal("map")
+                .then(Commands.argument("radius", IntegerArgumentType.integer(0, MAX_MAP_RADIUS))
+                        .executes(context -> {
+                            ServerPlayer player = context.getSource().getPlayerOrException();
+                            int radius = IntegerArgumentType.getInteger(context, "radius");
+                            DebugOverlayTracker.openMap(player, radius);
+                            DebugOverlaySync.sendMapUpdate(player);
+                            context.getSource().sendSuccess(() -> Component.literal("EchoRegions map opened (radius=" + radius + ")."), true);
+                            return 1;
+                        }));
     }
 
     private static ArgumentBuilder<CommandSourceStack, ?> decayCommand() {
@@ -352,6 +407,14 @@ public final class EchoRegionCommand {
                         return false;
                     }
                 }
+                case BOOLEAN -> {
+                    if (!"true".equalsIgnoreCase(valueInput) && !"false".equalsIgnoreCase(valueInput)) {
+                        source.sendFailure(Component.literal("Invalid boolean for " + entry.key() + ": " + valueInput));
+                        return false;
+                    }
+                    boolean value = Boolean.parseBoolean(valueInput);
+                    setRawValue(entry.value(), value);
+                }
                 default -> {
                     source.sendFailure(Component.literal("Unsupported config type for key: " + entry.key()));
                     return false;
@@ -395,22 +458,26 @@ public final class EchoRegionCommand {
         };
     }
 
-    private static Component buildActiveTags(java.util.List<RegionState.ActiveTag> tags) {
+    private static Component buildTopTags(java.util.List<RegionState.TagSnapshot> tags) {
         if (tags.isEmpty()) {
             return Component.literal("\n  - none");
         }
-        java.util.List<RegionState.ActiveTag> sorted = tags.stream()
-                .sorted((a, b) -> Integer.compare(b.score(), a.score()))
+        java.util.List<RegionState.TagSnapshot> sorted = tags.stream()
+                .sorted((a, b) -> Integer.compare(b.current(), a.current()))
                 .toList();
         int shown = Math.min(3, sorted.size());
         MutableComponent component = Component.empty();
         for (int i = 0; i < shown; i++) {
-            RegionState.ActiveTag tag = sorted.get(i);
+            RegionState.TagSnapshot tag = sorted.get(i);
             Component stateName = Component.translatable("echoregions.state." + tag.state().getId())
                     .withStyle(getStateColor(tag.state()));
             component.append(Component.literal("\n  - "))
                     .append(stateName)
-                    .append(Component.literal(" (" + tag.intensity().name() + ", score=" + tag.score() + ")"));
+                    .append(Component.literal(" (" + tag.intensity().name()
+                            + ", current=" + tag.current()
+                            + ", max=" + tag.max()
+                            + ", floor=" + tag.floor()
+                            + ")"));
         }
         int remaining = sorted.size() - shown;
         if (remaining > 0) {
