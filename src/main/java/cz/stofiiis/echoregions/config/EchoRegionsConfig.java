@@ -27,6 +27,13 @@ public final class EchoRegionsConfig {
     public static final ModConfigSpec.DoubleValue POSITIVE_DECAY_PERCENT;
     public static final ModConfigSpec.DoubleValue HEADLINE_KEEP_FACTOR;
     public static final ModConfigSpec.DoubleValue HEADLINE_SWITCH_RATIO;
+    public static final ModConfigSpec.IntValue MIN_HEADLINE_DURATION_MINUTES;
+
+    public static final ModConfigSpec.BooleanValue RESIDUAL_ENABLED;
+    public static final ModConfigSpec.DoubleValue RESIDUAL_NEGATIVE_PERCENT;
+    public static final ModConfigSpec.DoubleValue RESIDUAL_POSITIVE_PERCENT;
+    public static final ModConfigSpec.IntValue RESIDUAL_MIN_FLOOR;
+    public static final ModConfigSpec.BooleanValue RESIDUAL_AFFECTS_HEADLINE;
 
     public static final ModConfigSpec.DoubleValue SCARRED_PEBBLE_CHANCE;
     public static final ModConfigSpec.DoubleValue HAUNTED_ECTOPLASM_CHANCE;
@@ -83,13 +90,34 @@ public final class EchoRegionsConfig {
                 .defineInRange("positivePercent", 0.98, 0.0, 1.0);
         BUILDER.pop();
 
-        BUILDER.push("hysteresis");
+        BUILDER.push("headline");
         HEADLINE_KEEP_FACTOR = BUILDER
                 .comment("Keep headline as long as its score stays above threshold * factor.")
                 .defineInRange("keepThresholdFactor", 0.8, 0.0, 2.0);
         HEADLINE_SWITCH_RATIO = BUILDER
                 .comment("Switch headline if another score reaches currentScore * ratio.")
-                .defineInRange("switchRatio", 1.15, 1.0, 10.0);
+                .defineInRange("switchRatio", 1.25, 1.0, 10.0);
+        MIN_HEADLINE_DURATION_MINUTES = BUILDER
+                .comment("Minimum time to keep a headline before it may switch.")
+                .defineInRange("minDurationMinutes", 5, 0, 1440);
+        BUILDER.pop();
+
+        BUILDER.push("residual");
+        RESIDUAL_ENABLED = BUILDER
+                .comment("Enable residual floors based on historical maxima.")
+                .define("enabled", true);
+        RESIDUAL_NEGATIVE_PERCENT = BUILDER
+                .comment("Residual floor percent for negative scores (mining/combat/death/fire/exploit).")
+                .defineInRange("negativePercent", 0.10, 0.0, 1.0);
+        RESIDUAL_POSITIVE_PERCENT = BUILDER
+                .comment("Residual floor percent for positive scores (farm/build/travel).")
+                .defineInRange("positivePercent", 0.0, 0.0, 1.0);
+        RESIDUAL_MIN_FLOOR = BUILDER
+                .comment("Minimum residual floor applied to all scores.")
+                .defineInRange("minFloor", 0, 0, Integer.MAX_VALUE);
+        RESIDUAL_AFFECTS_HEADLINE = BUILDER
+                .comment("Whether residual floors influence headline selection.")
+                .define("affectsHeadline", true);
         BUILDER.pop();
 
         BUILDER.push("drops");

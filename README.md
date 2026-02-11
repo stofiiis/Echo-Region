@@ -1,24 +1,25 @@
 # Echo Regions
 
-Echo Regions tracks local region memory (8x8 chunks) and derives a regional state
+Echo Regions tracks region memory (8x8 chunks) and derives a regional state
 without changing biomes or worldgen. Effects and visuals are added via events only.
 
 ## Status
-Current: v0.5
+Current: v0.6
 
-## Features (v0.5)
+## Features (v0.6)
 - Server-side SavedData: RegionPos (8x8 chunks) -> RegionMemory
 - Mining/combat/death tracking
 - Farming tracking (bone meal, planting, harvest)
 - Building, fire, travel, and rare-mining tracking
 - Configurable thresholds + decay mode/interval
 - Asymmetric decay (negative scores linger longer than positive)
-- Score decay with pruning
+- Residual memory (historical maxima + decay floors)
+- Stable headline state (switch ratio + keep factor + min duration)
+- Multi-layer history: multiple active tags with intensity levels
 - Debug command: `/echoregion here` (local region + 3x3 region area)
+- Debug HUD + region map overlay
 - Pebble + Ectoplasm items with tooltips
 - Region states: SCARRED, HAUNTED, WAR_TORN, CULTIVATED, SETTLED, BLIGHTED, TRAVELLED, EXPLOITED
-- Multi-layer history: multiple active tags with intensity levels
-- Headline hysteresis for more stable state transitions
 - Ambient cues (particles/sounds) for SCARRED/HAUNTED/WAR_TORN
 
 ## Commands
@@ -26,11 +27,20 @@ All commands are server-side. Config/debug/decay commands require gamemaster per
 
 ### Debug
 - `/echoregion here`
-  - Shows region position, dimension, headline state, active tags (with intensity), thresholds, local region scores, 3x3 region area scores, and last update tick.
+  - Debug ON: headline with reason, top tags (current/max/floor), thresholds, residual config, local region scores, 3x3 region area scores, and last update tick.
+  - Debug OFF: region + headline + intensity only.
 - `/echoregion debug on`
   - Enables full debug output for `/echoregion here`.
 - `/echoregion debug off`
-  - Limits `/echoregion here` to basic info (chunk/dimension/state).
+  - Limits `/echoregion here` to basic info.
+
+### HUD / Map
+- `/echoregion hud on`
+  - Enables the debug HUD overlay.
+- `/echoregion hud off`
+  - Disables the debug HUD overlay.
+- `/echoregion map <radius>`
+  - Opens a client-side region map overlay. ESC closes.
 
 ### Config
 - `/echoregion config get <key>`
@@ -48,7 +58,8 @@ Valid keys:
 `decayIntervalMinutes`, `decayMode`,
 `negativeDecayFlatAmount`, `negativeDecayPercent`,
 `positiveDecayFlatAmount`, `positiveDecayPercent`,
-`headlineKeepThresholdFactor`, `headlineSwitchRatio`,
+`headlineKeepThresholdFactor`, `headlineSwitchRatio`, `headlineMinDurationMinutes`,
+`residualEnabled`, `residualNegativePercent`, `residualPositivePercent`, `residualMinFloor`, `residualAffectsHeadline`,
 `scarredPebbleChance`, `hauntedEctoplasmChance`, `warTornStrengthChance`
 
 Notes:
@@ -58,13 +69,24 @@ Notes:
 - `/echoregion decay now`
   - Immediately applies decay across all loaded levels using current config.
 
+## Residual Memory
+- Region remembers historical maxima.
+- Decay never goes below a configurable floor.
+- Negative traces persist longer than positive.
+- World calms down but does not fully forget.
+
+## Debug HUD
+- `/echoregion hud on/off` shows a compact overlay.
+- `/echoregion map <radius>` shows a 2D region grid (ESC to close).
+
 ## Testing checklist
 Minimal sanity checks after changes:
 1) Migration: open an old world and verify a single migration log entry appears once.
 2) Region mapping: cross a region border (every 8 chunks) and confirm scores write to a new region.
-3) Headline hysteresis: force a state above threshold, then reduce it below `threshold * keepFactor` and confirm the headline changes only when rules trigger.
-4) Active tags: verify top 3 are shown with intensity and the remainder is summarized as `...+N`.
-5) Asymmetric decay: set extreme negative/positive decay values, run `/echoregion decay now`, and confirm positive scores drop faster.
+3) Residual floors: raise a score, apply decay, and verify it never drops below floor.
+4) Headline stability: verify keep/switch logic + min duration before headline changes.
+5) HUD overlay: enable HUD and confirm updates every ~20 ticks.
+6) Map overlay: open map and verify center region and labels are correct.
 
 ## Build and run
 ```bash
@@ -80,13 +102,13 @@ Minimal sanity checks after changes:
 - Package: `cz.stofiiis.echoregions`
 
 ## Roadmap
-- v0.6: basic effects
+- v0.7: gameplay effects
 
 ## Backlog ideas
-- Ambient cues per region state
+- More ambient cues per region state
 - Small, safe gameplay effects tied to states
 
 ## Non-goals
 - No biome/worldgen rewrites
 - No custom dimensions
-- No GUI
+- No gameplay GUI (debug overlays only)

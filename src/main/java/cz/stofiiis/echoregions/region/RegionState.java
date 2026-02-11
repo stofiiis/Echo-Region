@@ -43,36 +43,52 @@ public enum RegionState {
         return toRegionState(dominant);
     }
 
-    public static HeadlineResult resolveHeadline(RegionMemoryData data, RegionPos center, AggregatedScores areaScores) {
+    public static HeadlineResult resolveHeadline(RegionMemoryData data, RegionPos center, AggregatedScores scores, long gameTime) {
         RegionMemory memory = data.getMemory(center);
         RegionState previous = memory != null ? fromId(memory.getHeadlineId()) : null;
-        RegionState candidate = getState(areaScores);
+        RegionState candidate = getState(scores);
+        DominantScore candidateScoreType = dominantForState(candidate);
+        int candidateScore = scoreFor(candidateScoreType, scores);
+
         if (previous == null || previous == NEUTRAL) {
             String reason = "changed: no previous (candidateScore="
-                    + scoreFor(dominantForState(candidate), areaScores)
-                    + ", threshold=" + thresholdFor(dominantForState(candidate)) + ")";
+                    + candidateScore
+                    + ", threshold=" + thresholdFor(candidateScoreType) + ")";
             return new HeadlineResult(candidate, reason, false);
         }
 
+        if (candidate == previous) {
+            int currentScore = scoreFor(dominantForState(previous), scores);
+            String reason = "kept: same state (current=" + currentScore + ")";
+            return new HeadlineResult(previous, reason, true);
+        }
+
+        long minDurationTicks = Math.max(0L, EchoRegionsConfig.MIN_HEADLINE_DURATION_MINUTES.get()) * 20L * 60L;
+        long headlineUpdated = memory != null ? memory.getHeadlineUpdated() : 0L;
+        if (minDurationTicks > 0 && headlineUpdated > 0L && gameTime - headlineUpdated < minDurationTicks) {
+            long remaining = minDurationTicks - Math.max(0L, gameTime - headlineUpdated);
+            String reason = "kept: minDuration (" + remaining + " ticks)";
+            return new HeadlineResult(previous, reason, true);
+        }
+
         DominantScore previousScore = dominantForState(previous);
-        int currentScore = scoreFor(previousScore, areaScores);
+        int currentScore = scoreFor(previousScore, scores);
         int threshold = thresholdFor(previousScore);
         double keepFloor = threshold * EchoRegionsConfig.HEADLINE_KEEP_FACTOR.get();
-        int bestOther = bestOtherScore(previousScore, areaScores);
         double switchTrigger = currentScore * EchoRegionsConfig.HEADLINE_SWITCH_RATIO.get();
 
-        boolean kept = currentScore >= keepFloor && bestOther < switchTrigger;
-        RegionState headline = kept ? previous : candidate;
+        boolean canSwitch = candidateScore >= switchTrigger && currentScore < keepFloor;
+        RegionState headline = canSwitch ? candidate : previous;
         String reason = String.format(
                 Locale.ROOT,
-                "%s: current=%d, keep>=%.2f, bestOther=%d, switch>=%.2f",
-                kept ? "kept" : "changed",
+                "%s: current=%d, keep<%.2f, candidate=%d, switch>=%.2f",
+                canSwitch ? "changed" : "kept",
                 currentScore,
                 keepFloor,
-                bestOther,
+                candidateScore,
                 switchTrigger
         );
-        return new HeadlineResult(headline, reason, kept);
+        return new HeadlineResult(headline, reason, !canSwitch);
     }
 
     public static DominantScore getDominant(AggregatedScores scores) {
@@ -138,6 +154,86 @@ public enum RegionState {
         return new AggregatedScores(mining, combat, death, farm, build, fire, travel, exploit);
     }
 
+    public static AggregatedScores aggregateAreaMaxScores(RegionMemoryData data, RegionPos center) {
+        return aggregateMaxScores(data, center, 1);
+    }
+
+    public static AggregatedScores aggregateAreaFloorScores(RegionMemoryData data, RegionPos center) {
+        return aggregateFloorScores(data, center, 1);
+    }
+
+    public static AggregatedScores aggregateAreaScoresForHeadline(RegionMemoryData data, RegionPos center) {
+        AggregatedScores current = aggregateAreaScores(data, center);
+        if (EchoRegionsConfig.RESIDUAL_AFFECTS_HEADLINE.get()) {
+            return current;
+        }
+        AggregatedScores floors = aggregateAreaFloorScores(data, center);
+        return subtractScores(current, floors);
+    }
+
+    private static AggregatedScores aggregateMaxScores(RegionMemoryData data, RegionPos center, int radius) {
+        int mining = 0;
+        int combat = 0;
+        int death = 0;
+        int farm = 0;
+        int build = 0;
+        int fire = 0;
+        int travel = 0;
+        int exploit = 0;
+        for (int dx = -radius; dx <= radius; dx++) {
+            for (int dz = -radius; dz <= radius; dz++) {
+                RegionPos pos = new RegionPos(center.x() + dx, center.z() + dz);
+                RegionMemory memory = data.getMemory(pos);
+                if (memory == null) {
+                    continue;
+                }
+                mining += memory.getMaxMiningScore();
+                combat += memory.getMaxCombatScore();
+                death += memory.getMaxDeathScore();
+                farm += memory.getMaxFarmScore();
+                build += memory.getMaxBuildScore();
+                fire += memory.getMaxFireScore();
+                travel += memory.getMaxTravelScore();
+                exploit += memory.getMaxExploitScore();
+            }
+        }
+        return new AggregatedScores(mining, combat, death, farm, build, fire, travel, exploit);
+    }
+
+    private static AggregatedScores aggregateFloorScores(RegionMemoryData data, RegionPos center, int radius) {
+        boolean residualEnabled = EchoRegionsConfig.RESIDUAL_ENABLED.get();
+        double negativePercent = EchoRegionsConfig.RESIDUAL_NEGATIVE_PERCENT.get();
+        double positivePercent = EchoRegionsConfig.RESIDUAL_POSITIVE_PERCENT.get();
+        int minFloor = EchoRegionsConfig.RESIDUAL_MIN_FLOOR.get();
+
+        int mining = 0;
+        int combat = 0;
+        int death = 0;
+        int farm = 0;
+        int build = 0;
+        int fire = 0;
+        int travel = 0;
+        int exploit = 0;
+        for (int dx = -radius; dx <= radius; dx++) {
+            for (int dz = -radius; dz <= radius; dz++) {
+                RegionPos pos = new RegionPos(center.x() + dx, center.z() + dz);
+                RegionMemory memory = data.getMemory(pos);
+                if (memory == null) {
+                    continue;
+                }
+                mining += memory.floorMining(residualEnabled, negativePercent, minFloor);
+                combat += memory.floorCombat(residualEnabled, negativePercent, minFloor);
+                death += memory.floorDeath(residualEnabled, negativePercent, minFloor);
+                fire += memory.floorFire(residualEnabled, negativePercent, minFloor);
+                exploit += memory.floorExploit(residualEnabled, negativePercent, minFloor);
+                farm += memory.floorFarm(residualEnabled, positivePercent, minFloor);
+                build += memory.floorBuild(residualEnabled, positivePercent, minFloor);
+                travel += memory.floorTravel(residualEnabled, positivePercent, minFloor);
+            }
+        }
+        return new AggregatedScores(mining, combat, death, farm, build, fire, travel, exploit);
+    }
+
     private static DominantScore getDominant(
             int mining,
             int combat,
@@ -191,10 +287,42 @@ public enum RegionState {
             int value = scoreFor(score, scores);
             int threshold = thresholdFor(score);
             if (threshold <= 0 ? value > 0 : value >= threshold) {
-                tags.add(new ActiveTag(toRegionState(score), intensityFor(value, threshold), value));
+                tags.add(new ActiveTag(toRegionState(score), intensityForScore(value, threshold), value));
             }
         }
         return tags;
+    }
+
+    public static List<TagSnapshot> buildTagSnapshots(AggregatedScores current, AggregatedScores max, AggregatedScores floor) {
+        List<TagSnapshot> tags = new ArrayList<>();
+        for (DominantScore score : DominantScore.values()) {
+            if (score == DominantScore.NONE) {
+                continue;
+            }
+            int currentScore = scoreFor(score, current);
+            if (currentScore <= 0) {
+                continue;
+            }
+            int maxScore = scoreFor(score, max);
+            int floorScore = scoreFor(score, floor);
+            int threshold = thresholdFor(score);
+            tags.add(new TagSnapshot(
+                    toRegionState(score),
+                    intensityForScore(currentScore, threshold),
+                    currentScore,
+                    maxScore,
+                    floorScore
+            ));
+        }
+        return tags;
+    }
+
+    public static Intensity intensityForState(RegionState state, AggregatedScores scores) {
+        if (state == null || state == NEUTRAL) {
+            return Intensity.LOW;
+        }
+        DominantScore dominant = dominantForState(state);
+        return intensityForScore(scoreFor(dominant, scores), thresholdFor(dominant));
     }
 
     public enum DominantScore {
@@ -315,7 +443,7 @@ public enum RegionState {
         };
     }
 
-    private static Intensity intensityFor(int score, int threshold) {
+    public static Intensity intensityForScore(int score, int threshold) {
         if (threshold <= 0) {
             return Intensity.HIGH;
         }
@@ -330,15 +458,15 @@ public enum RegionState {
         return Intensity.LOW;
     }
 
-    private static int bestOtherScore(DominantScore current, AggregatedScores scores) {
-        int best = 0;
-        for (DominantScore score : DominantScore.values()) {
-            if (score == DominantScore.NONE || score == current) {
-                continue;
-            }
-            best = Math.max(best, scoreFor(score, scores));
-        }
-        return best;
+    public static int totalScore(AggregatedScores scores) {
+        return scores.mining()
+                + scores.combat()
+                + scores.death()
+                + scores.farm()
+                + scores.build()
+                + scores.fire()
+                + scores.travel()
+                + scores.exploit();
     }
 
     public static RegionState fromId(String id) {
@@ -362,6 +490,9 @@ public enum RegionState {
     public record ActiveTag(RegionState state, Intensity intensity, int score) {
     }
 
+    public record TagSnapshot(RegionState state, Intensity intensity, int current, int max, int floor) {
+    }
+
     public record HeadlineResult(RegionState state, String reason, boolean kept) {
     }
 
@@ -375,5 +506,18 @@ public enum RegionState {
             int travel,
             int exploit
     ) {
+    }
+
+    private static AggregatedScores subtractScores(AggregatedScores current, AggregatedScores floor) {
+        return new AggregatedScores(
+                Math.max(0, current.mining() - floor.mining()),
+                Math.max(0, current.combat() - floor.combat()),
+                Math.max(0, current.death() - floor.death()),
+                Math.max(0, current.farm() - floor.farm()),
+                Math.max(0, current.build() - floor.build()),
+                Math.max(0, current.fire() - floor.fire()),
+                Math.max(0, current.travel() - floor.travel()),
+                Math.max(0, current.exploit() - floor.exploit())
+        );
     }
 }

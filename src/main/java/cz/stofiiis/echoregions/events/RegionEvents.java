@@ -9,6 +9,8 @@ import cz.stofiiis.echoregions.commands.EchoRegionCommand;
 import cz.stofiiis.echoregions.config.EchoRegionsConfig;
 import cz.stofiiis.echoregions.data.RegionMemoryData;
 import cz.stofiiis.echoregions.data.RegionPos;
+import cz.stofiiis.echoregions.debug.DebugOverlaySync;
+import cz.stofiiis.echoregions.debug.DebugOverlayTracker;
 import cz.stofiiis.echoregions.region.RegionState;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.Registries;
@@ -211,16 +213,21 @@ public class RegionEvents {
     @SubscribeEvent
     public void onPlayerLogout(PlayerEvent.PlayerLoggedOutEvent event) {
         lastChunkByPlayer.remove(event.getEntity().getUUID());
+        if (event.getEntity() instanceof ServerPlayer serverPlayer) {
+            DebugOverlayTracker.clear(serverPlayer);
+        }
     }
 
     @SubscribeEvent
     public void onServerTick(ServerTickEvent.Post event) {
+        MinecraftServer server = event.getServer();
+        DebugOverlaySync.tick(server);
+
         int intervalTicks = Math.max(1, EchoRegionsConfig.DECAY_INTERVAL_MINUTES.get()) * 20 * 60;
         if (++tickCounter < intervalTicks) {
             return;
         }
         tickCounter = 0;
-        MinecraftServer server = event.getServer();
         EchoRegionsConfig.DecayMode mode = EchoRegionsConfig.DECAY_MODE.get();
         for (ServerLevel level : server.getAllLevels()) {
             RegionMemoryData data = RegionMemoryData.get(level);

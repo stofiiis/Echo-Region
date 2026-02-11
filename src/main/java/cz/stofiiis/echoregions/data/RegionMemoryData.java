@@ -9,6 +9,7 @@ import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 
 import cz.stofiiis.echoregions.EchoRegions;
+import cz.stofiiis.echoregions.config.EchoRegionsConfig;
 import net.minecraft.util.datafix.DataFixTypes;
 import net.minecraft.world.level.saveddata.SavedData;
 import net.minecraft.world.level.saveddata.SavedDataType;
@@ -16,10 +17,12 @@ import net.minecraft.server.level.ServerLevel;
 
 public class RegionMemoryData extends SavedData {
     public static final String DATA_ID = EchoRegions.MOD_ID + "_region_memory";
+    public static final int DATA_VERSION = 2;
 
     private static final Codec<Map<Long, RegionMemory>> REGION_MAP_CODEC = Codec.unboundedMap(Codec.STRING, RegionMemory.CODEC)
             .xmap(RegionMemoryData::stringKeyMapToLong, RegionMemoryData::longKeyMapToString);
     public static final Codec<RegionMemoryData> CODEC = RecordCodecBuilder.create(instance -> instance.group(
+            Codec.INT.optionalFieldOf("dataVersion", 0).forGetter(data -> data.dataVersion),
             REGION_MAP_CODEC.optionalFieldOf("regions", Map.<Long, RegionMemory>of()).forGetter(data -> data.regions),
             REGION_MAP_CODEC.optionalFieldOf("memories", Map.<Long, RegionMemory>of()).forGetter(data -> Map.of())
     ).apply(instance, RegionMemoryData::new));
@@ -32,28 +35,34 @@ public class RegionMemoryData extends SavedData {
     );
 
     private final Map<Long, RegionMemory> regions;
+    private final int dataVersion;
 
     public RegionMemoryData() {
-        this(new HashMap<>());
+        this(DATA_VERSION, new HashMap<>(), Map.of());
     }
 
-    private RegionMemoryData(Map<Long, RegionMemory> regions) {
-        this.regions = new HashMap<>(regions);
-    }
-
-    private RegionMemoryData(Map<Long, RegionMemory> regions, Map<Long, RegionMemory> legacyMemories) {
+    private RegionMemoryData(int dataVersion, Map<Long, RegionMemory> regions, Map<Long, RegionMemory> legacyMemories) {
+        boolean dirty = false;
+        this.dataVersion = DATA_VERSION;
         if (!regions.isEmpty()) {
             this.regions = new HashMap<>(regions);
-            return;
-        }
-        if (!legacyMemories.isEmpty()) {
+        } else if (!legacyMemories.isEmpty()) {
             MigrationResult migration = migrateLegacyChunks(legacyMemories);
             this.regions = migration.regions();
-            setDirty();
+            dirty = true;
             EchoRegions.LOGGER.info("Migrated {} chunk entries into {} region entries.", migration.chunkCount(), migration.regionCount());
-            return;
+        } else {
+            this.regions = new HashMap<>();
         }
-        this.regions = new HashMap<>();
+        if (normalizeMemories(this.regions)) {
+            dirty = true;
+        }
+        if (dataVersion != DATA_VERSION) {
+            dirty = true;
+        }
+        if (dirty) {
+            setDirty();
+        }
     }
 
     public static RegionMemoryData get(ServerLevel level) {
@@ -64,12 +73,12 @@ public class RegionMemoryData extends SavedData {
         return regions.get(pos.toLong());
     }
 
-    public boolean updateHeadline(RegionPos pos, String headlineId) {
+    public boolean updateHeadline(RegionPos pos, String headlineId, long gameTime) {
         RegionMemory memory = regions.get(pos.toLong());
         if (memory == null) {
             return false;
         }
-        if (memory.setHeadlineId(headlineId)) {
+        if (memory.setHeadlineId(headlineId, gameTime)) {
             setDirty();
             return true;
         }
@@ -125,11 +134,35 @@ public class RegionMemoryData extends SavedData {
     }
 
     public void decayAllFlat(int negativeAmount, int positiveAmount, long gameTime) {
-        decayAllInternal(memory -> memory.decayFlat(negativeAmount, positiveAmount, gameTime));
+        boolean residualEnabled = EchoRegionsConfig.RESIDUAL_ENABLED.get();
+        double residualNegativePercent = EchoRegionsConfig.RESIDUAL_NEGATIVE_PERCENT.get();
+        double residualPositivePercent = EchoRegionsConfig.RESIDUAL_POSITIVE_PERCENT.get();
+        int residualMinFloor = EchoRegionsConfig.RESIDUAL_MIN_FLOOR.get();
+        decayAllInternal(memory -> memory.decayFlat(
+                negativeAmount,
+                positiveAmount,
+                residualEnabled,
+                residualNegativePercent,
+                residualPositivePercent,
+                residualMinFloor,
+                gameTime
+        ));
     }
 
     public void decayAllPercent(double negativeFactor, double positiveFactor, long gameTime) {
-        decayAllInternal(memory -> memory.decayPercent(negativeFactor, positiveFactor, gameTime));
+        boolean residualEnabled = EchoRegionsConfig.RESIDUAL_ENABLED.get();
+        double residualNegativePercent = EchoRegionsConfig.RESIDUAL_NEGATIVE_PERCENT.get();
+        double residualPositivePercent = EchoRegionsConfig.RESIDUAL_POSITIVE_PERCENT.get();
+        int residualMinFloor = EchoRegionsConfig.RESIDUAL_MIN_FLOOR.get();
+        decayAllInternal(memory -> memory.decayPercent(
+                negativeFactor,
+                positiveFactor,
+                residualEnabled,
+                residualNegativePercent,
+                residualPositivePercent,
+                residualMinFloor,
+                gameTime
+        ));
     }
 
     private void decayAllInternal(Function<RegionMemory, Boolean> decayer) {
@@ -141,7 +174,7 @@ public class RegionMemoryData extends SavedData {
             if (decayer.apply(memory)) {
                 changed = true;
             }
-            if (memory.isEmpty()) {
+            if (memory.isEmpty() && memory.isHistoryEmpty()) {
                 iterator.remove();
                 changed = true;
             }
@@ -179,6 +212,16 @@ public class RegionMemoryData extends SavedData {
             output.put(Long.toString(entry.getKey()), entry.getValue());
         }
         return output;
+    }
+
+    private static boolean normalizeMemories(Map<Long, RegionMemory> regions) {
+        boolean changed = false;
+        for (RegionMemory memory : regions.values()) {
+            if (memory.normalize()) {
+                changed = true;
+            }
+        }
+        return changed;
     }
 
     private static MigrationResult migrateLegacyChunks(Map<Long, RegionMemory> legacyMemories) {
