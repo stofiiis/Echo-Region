@@ -109,6 +109,10 @@ Minimal sanity checks after changes:
 ./gradlew build
 ```
 
+## License
+This project is licensed under the "Don't Touch My Shit License" (DTMSL) v1.1.
+Use is allowed, redistribution is not.
+
 ## Tech
 - Minecraft 1.21.11
 - NeoForge 21.11.38-beta
