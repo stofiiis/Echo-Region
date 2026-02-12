@@ -60,7 +60,20 @@ Valid keys:
 `positiveDecayFlatAmount`, `positiveDecayPercent`,
 `headlineKeepThresholdFactor`, `headlineSwitchRatio`, `headlineMinDurationMinutes`,
 `residualEnabled`, `residualNegativePercent`, `residualPositivePercent`, `residualMinFloor`, `residualAffectsHeadline`,
-`scarredPebbleChance`, `hauntedEctoplasmChance`, `warTornStrengthChance`
+`scarredPebbleChance`, `hauntedEctoplasmChance`, `warTornStrengthChance`,
+`ambientEnabled`, `ambientCheckIntervalTicks`, `ambientCooldownTicks`,
+`scarredAmbientChanceLow`, `scarredAmbientChanceMed`, `scarredAmbientChanceHigh`,
+`scarredAmbientParticlesLow`, `scarredAmbientParticlesMed`, `scarredAmbientParticlesHigh`,
+`scarredMiningChanceLow`, `scarredMiningChanceMed`, `scarredMiningChanceHigh`,
+`scarredMiningParticlesLow`, `scarredMiningParticlesMed`, `scarredMiningParticlesHigh`,
+`hauntedAmbientChanceLow`, `hauntedAmbientChanceMed`, `hauntedAmbientChanceHigh`,
+`hauntedAmbientParticlesLow`, `hauntedAmbientParticlesMed`, `hauntedAmbientParticlesHigh`,
+`hauntedSoundChanceLow`, `hauntedSoundChanceMed`, `hauntedSoundChanceHigh`,
+`hauntedSoundVolume`, `hauntedSoundPitch`,
+`warTornAmbientChanceLow`, `warTornAmbientChanceMed`, `warTornAmbientChanceHigh`,
+`warTornAmbientParticlesLow`, `warTornAmbientParticlesMed`, `warTornAmbientParticlesHigh`,
+`warTornCombatChanceLow`, `warTornCombatChanceMed`, `warTornCombatChanceHigh`,
+`warTornCombatParticlesLow`, `warTornCombatParticlesMed`, `warTornCombatParticlesHigh`
 
 Notes:
 - `decayMode` accepts `FLAT` or `PERCENT`.
@@ -87,6 +100,7 @@ Minimal sanity checks after changes:
 4) Headline stability: verify keep/switch logic + min duration before headline changes.
 5) HUD overlay: enable HUD and confirm updates every ~20 ticks.
 6) Map overlay: open map and verify center region and labels are correct.
+7) Ambient cues: in SCARRED/HAUNTED/WAR_TORN regions, verify particles/sounds are noticeable (night for HAUNTED).
 
 ## Build and run
 ```bash

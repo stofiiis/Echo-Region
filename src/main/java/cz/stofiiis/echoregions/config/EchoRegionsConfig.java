@@ -39,6 +39,48 @@ public final class EchoRegionsConfig {
     public static final ModConfigSpec.DoubleValue HAUNTED_ECTOPLASM_CHANCE;
     public static final ModConfigSpec.DoubleValue WAR_TORN_STRENGTH_CHANCE;
 
+    public static final ModConfigSpec.BooleanValue AMBIENT_ENABLED;
+    public static final ModConfigSpec.IntValue AMBIENT_CHECK_INTERVAL_TICKS;
+    public static final ModConfigSpec.IntValue AMBIENT_COOLDOWN_TICKS;
+
+    public static final ModConfigSpec.DoubleValue SCARRED_AMBIENT_CHANCE_LOW;
+    public static final ModConfigSpec.DoubleValue SCARRED_AMBIENT_CHANCE_MED;
+    public static final ModConfigSpec.DoubleValue SCARRED_AMBIENT_CHANCE_HIGH;
+    public static final ModConfigSpec.IntValue SCARRED_AMBIENT_PARTICLES_LOW;
+    public static final ModConfigSpec.IntValue SCARRED_AMBIENT_PARTICLES_MED;
+    public static final ModConfigSpec.IntValue SCARRED_AMBIENT_PARTICLES_HIGH;
+    public static final ModConfigSpec.DoubleValue SCARRED_MINING_CHANCE_LOW;
+    public static final ModConfigSpec.DoubleValue SCARRED_MINING_CHANCE_MED;
+    public static final ModConfigSpec.DoubleValue SCARRED_MINING_CHANCE_HIGH;
+    public static final ModConfigSpec.IntValue SCARRED_MINING_PARTICLES_LOW;
+    public static final ModConfigSpec.IntValue SCARRED_MINING_PARTICLES_MED;
+    public static final ModConfigSpec.IntValue SCARRED_MINING_PARTICLES_HIGH;
+
+    public static final ModConfigSpec.DoubleValue HAUNTED_AMBIENT_CHANCE_LOW;
+    public static final ModConfigSpec.DoubleValue HAUNTED_AMBIENT_CHANCE_MED;
+    public static final ModConfigSpec.DoubleValue HAUNTED_AMBIENT_CHANCE_HIGH;
+    public static final ModConfigSpec.IntValue HAUNTED_AMBIENT_PARTICLES_LOW;
+    public static final ModConfigSpec.IntValue HAUNTED_AMBIENT_PARTICLES_MED;
+    public static final ModConfigSpec.IntValue HAUNTED_AMBIENT_PARTICLES_HIGH;
+    public static final ModConfigSpec.DoubleValue HAUNTED_SOUND_CHANCE_LOW;
+    public static final ModConfigSpec.DoubleValue HAUNTED_SOUND_CHANCE_MED;
+    public static final ModConfigSpec.DoubleValue HAUNTED_SOUND_CHANCE_HIGH;
+    public static final ModConfigSpec.DoubleValue HAUNTED_SOUND_VOLUME;
+    public static final ModConfigSpec.DoubleValue HAUNTED_SOUND_PITCH;
+
+    public static final ModConfigSpec.DoubleValue WAR_TORN_AMBIENT_CHANCE_LOW;
+    public static final ModConfigSpec.DoubleValue WAR_TORN_AMBIENT_CHANCE_MED;
+    public static final ModConfigSpec.DoubleValue WAR_TORN_AMBIENT_CHANCE_HIGH;
+    public static final ModConfigSpec.IntValue WAR_TORN_AMBIENT_PARTICLES_LOW;
+    public static final ModConfigSpec.IntValue WAR_TORN_AMBIENT_PARTICLES_MED;
+    public static final ModConfigSpec.IntValue WAR_TORN_AMBIENT_PARTICLES_HIGH;
+    public static final ModConfigSpec.DoubleValue WAR_TORN_COMBAT_CHANCE_LOW;
+    public static final ModConfigSpec.DoubleValue WAR_TORN_COMBAT_CHANCE_MED;
+    public static final ModConfigSpec.DoubleValue WAR_TORN_COMBAT_CHANCE_HIGH;
+    public static final ModConfigSpec.IntValue WAR_TORN_COMBAT_PARTICLES_LOW;
+    public static final ModConfigSpec.IntValue WAR_TORN_COMBAT_PARTICLES_MED;
+    public static final ModConfigSpec.IntValue WAR_TORN_COMBAT_PARTICLES_HIGH;
+
     public static final ModConfigSpec SPEC;
 
     static {
@@ -130,6 +172,63 @@ public final class EchoRegionsConfig {
         WAR_TORN_STRENGTH_CHANCE = BUILDER
                 .comment("Chance for WAR_TORN strength effect (future use).")
                 .defineInRange("warTornStrengthChance", 0.05, 0.0, 1.0);
+        BUILDER.pop();
+
+        BUILDER.push("ambient");
+        AMBIENT_ENABLED = BUILDER
+                .comment("Enable ambient particles/sounds based on region headline.")
+                .define("enabled", true);
+        AMBIENT_CHECK_INTERVAL_TICKS = BUILDER
+                .comment("How often to evaluate ambient cues (ticks).")
+                .defineInRange("checkIntervalTicks", 40, 1, 1200);
+        AMBIENT_COOLDOWN_TICKS = BUILDER
+                .comment("Minimum ticks between ambient cues per player/state.")
+                .defineInRange("cooldownTicks", 100, 0, 12000);
+
+        BUILDER.push("scarred");
+        SCARRED_AMBIENT_CHANCE_LOW = BUILDER.defineInRange("ambientChanceLow", 0.25, 0.0, 1.0);
+        SCARRED_AMBIENT_CHANCE_MED = BUILDER.defineInRange("ambientChanceMed", 0.4, 0.0, 1.0);
+        SCARRED_AMBIENT_CHANCE_HIGH = BUILDER.defineInRange("ambientChanceHigh", 0.6, 0.0, 1.0);
+        SCARRED_AMBIENT_PARTICLES_LOW = BUILDER.defineInRange("ambientParticlesLow", 6, 0, 200);
+        SCARRED_AMBIENT_PARTICLES_MED = BUILDER.defineInRange("ambientParticlesMed", 10, 0, 200);
+        SCARRED_AMBIENT_PARTICLES_HIGH = BUILDER.defineInRange("ambientParticlesHigh", 14, 0, 200);
+        SCARRED_MINING_CHANCE_LOW = BUILDER.defineInRange("miningChanceLow", 0.4, 0.0, 1.0);
+        SCARRED_MINING_CHANCE_MED = BUILDER.defineInRange("miningChanceMed", 0.6, 0.0, 1.0);
+        SCARRED_MINING_CHANCE_HIGH = BUILDER.defineInRange("miningChanceHigh", 0.8, 0.0, 1.0);
+        SCARRED_MINING_PARTICLES_LOW = BUILDER.defineInRange("miningParticlesLow", 6, 0, 200);
+        SCARRED_MINING_PARTICLES_MED = BUILDER.defineInRange("miningParticlesMed", 10, 0, 200);
+        SCARRED_MINING_PARTICLES_HIGH = BUILDER.defineInRange("miningParticlesHigh", 14, 0, 200);
+        BUILDER.pop();
+
+        BUILDER.push("haunted");
+        HAUNTED_AMBIENT_CHANCE_LOW = BUILDER.defineInRange("ambientChanceLow", 0.2, 0.0, 1.0);
+        HAUNTED_AMBIENT_CHANCE_MED = BUILDER.defineInRange("ambientChanceMed", 0.35, 0.0, 1.0);
+        HAUNTED_AMBIENT_CHANCE_HIGH = BUILDER.defineInRange("ambientChanceHigh", 0.5, 0.0, 1.0);
+        HAUNTED_AMBIENT_PARTICLES_LOW = BUILDER.defineInRange("ambientParticlesLow", 5, 0, 200);
+        HAUNTED_AMBIENT_PARTICLES_MED = BUILDER.defineInRange("ambientParticlesMed", 9, 0, 200);
+        HAUNTED_AMBIENT_PARTICLES_HIGH = BUILDER.defineInRange("ambientParticlesHigh", 12, 0, 200);
+        HAUNTED_SOUND_CHANCE_LOW = BUILDER.defineInRange("soundChanceLow", 0.2, 0.0, 1.0);
+        HAUNTED_SOUND_CHANCE_MED = BUILDER.defineInRange("soundChanceMed", 0.35, 0.0, 1.0);
+        HAUNTED_SOUND_CHANCE_HIGH = BUILDER.defineInRange("soundChanceHigh", 0.5, 0.0, 1.0);
+        HAUNTED_SOUND_VOLUME = BUILDER.defineInRange("soundVolume", 0.4, 0.0, 2.0);
+        HAUNTED_SOUND_PITCH = BUILDER.defineInRange("soundPitch", 0.8, 0.5, 2.0);
+        BUILDER.pop();
+
+        BUILDER.push("warTorn");
+        WAR_TORN_AMBIENT_CHANCE_LOW = BUILDER.defineInRange("ambientChanceLow", 0.2, 0.0, 1.0);
+        WAR_TORN_AMBIENT_CHANCE_MED = BUILDER.defineInRange("ambientChanceMed", 0.35, 0.0, 1.0);
+        WAR_TORN_AMBIENT_CHANCE_HIGH = BUILDER.defineInRange("ambientChanceHigh", 0.5, 0.0, 1.0);
+        WAR_TORN_AMBIENT_PARTICLES_LOW = BUILDER.defineInRange("ambientParticlesLow", 6, 0, 200);
+        WAR_TORN_AMBIENT_PARTICLES_MED = BUILDER.defineInRange("ambientParticlesMed", 10, 0, 200);
+        WAR_TORN_AMBIENT_PARTICLES_HIGH = BUILDER.defineInRange("ambientParticlesHigh", 14, 0, 200);
+        WAR_TORN_COMBAT_CHANCE_LOW = BUILDER.defineInRange("combatChanceLow", 0.35, 0.0, 1.0);
+        WAR_TORN_COMBAT_CHANCE_MED = BUILDER.defineInRange("combatChanceMed", 0.55, 0.0, 1.0);
+        WAR_TORN_COMBAT_CHANCE_HIGH = BUILDER.defineInRange("combatChanceHigh", 0.75, 0.0, 1.0);
+        WAR_TORN_COMBAT_PARTICLES_LOW = BUILDER.defineInRange("combatParticlesLow", 8, 0, 200);
+        WAR_TORN_COMBAT_PARTICLES_MED = BUILDER.defineInRange("combatParticlesMed", 12, 0, 200);
+        WAR_TORN_COMBAT_PARTICLES_HIGH = BUILDER.defineInRange("combatParticlesHigh", 16, 0, 200);
+        BUILDER.pop();
+
         BUILDER.pop();
 
         SPEC = BUILDER.build();
