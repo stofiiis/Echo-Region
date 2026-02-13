@@ -62,8 +62,11 @@ Valid keys:
 `residualEnabled`, `residualNegativePercent`, `residualPositivePercent`, `residualMinFloor`, `residualAffectsHeadline`,
 `scarredPebbleChance`, `hauntedEctoplasmChance`, `warTornStrengthChance`,
 `ambientEnabled`, `ambientCheckIntervalTicks`, `ambientCooldownTicks`,
+`ambientEntryEnabled`, `ambientEntryChanceMultiplier`, `ambientEntryParticleMultiplier`, `ambientEntrySoundMultiplier`,
 `scarredAmbientChanceLow`, `scarredAmbientChanceMed`, `scarredAmbientChanceHigh`,
 `scarredAmbientParticlesLow`, `scarredAmbientParticlesMed`, `scarredAmbientParticlesHigh`,
+`scarredSoundChanceLow`, `scarredSoundChanceMed`, `scarredSoundChanceHigh`,
+`scarredSoundVolume`, `scarredSoundPitch`,
 `scarredMiningChanceLow`, `scarredMiningChanceMed`, `scarredMiningChanceHigh`,
 `scarredMiningParticlesLow`, `scarredMiningParticlesMed`, `scarredMiningParticlesHigh`,
 `hauntedAmbientChanceLow`, `hauntedAmbientChanceMed`, `hauntedAmbientChanceHigh`,
@@ -72,6 +75,8 @@ Valid keys:
 `hauntedSoundVolume`, `hauntedSoundPitch`,
 `warTornAmbientChanceLow`, `warTornAmbientChanceMed`, `warTornAmbientChanceHigh`,
 `warTornAmbientParticlesLow`, `warTornAmbientParticlesMed`, `warTornAmbientParticlesHigh`,
+`warTornSoundChanceLow`, `warTornSoundChanceMed`, `warTornSoundChanceHigh`,
+`warTornSoundVolume`, `warTornSoundPitch`,
 `warTornCombatChanceLow`, `warTornCombatChanceMed`, `warTornCombatChanceHigh`,
 `warTornCombatParticlesLow`, `warTornCombatParticlesMed`, `warTornCombatParticlesHigh`
 

@@ -66,6 +66,9 @@ public class RegionEvents {
         private long lastWarTorn;
     }
 
+    private record HeadlineContext(RegionState state, RegionState.Intensity intensity) {
+    }
+
     @SubscribeEvent
     public void onBlockBreak(BlockEvent.BreakEvent event) {
         if (event.isCanceled()) {
@@ -229,12 +232,19 @@ public class RegionEvents {
         ServerLevel level = (ServerLevel) serverPlayer.level();
         PlayerChunk current = new PlayerChunk(level.dimension(), serverPlayer.chunkPosition());
         PlayerChunk previous = lastChunkByPlayer.get(serverPlayer.getUUID());
+        RegionPos currentRegion = RegionPos.fromChunk(current.pos());
         if (!current.equals(previous)) {
+            boolean regionChanged = hasRegionChanged(previous, current);
             lastChunkByPlayer.put(serverPlayer.getUUID(), current);
             RegionMemoryData data = RegionMemoryData.get(level);
             data.addTravelScore(RegionPos.fromChunk(current.pos()), 1, level.getGameTime());
+            if (regionChanged) {
+                HeadlineContext headline = resolveHeadline(level, currentRegion, level.getGameTime());
+                AmbientCooldowns cooldowns = ambientCooldowns.computeIfAbsent(serverPlayer.getUUID(), id -> new AmbientCooldowns());
+                triggerEntryAmbient(level, serverPlayer, headline, cooldowns, level.getGameTime());
+            }
         }
-        handleAmbient(level, serverPlayer, current.pos());
+        handleAmbient(level, serverPlayer, current.pos(), currentRegion);
     }
 
     @SubscribeEvent
@@ -324,7 +334,7 @@ public class RegionEvents {
         return state.is(BUILDING_BLOCKS);
     }
 
-    private void handleAmbient(ServerLevel level, ServerPlayer player, ChunkPos chunkPos) {
+    private void handleAmbient(ServerLevel level, ServerPlayer player, ChunkPos chunkPos, RegionPos regionPos) {
         if (!EchoRegionsConfig.AMBIENT_ENABLED.get()) {
             return;
         }
@@ -334,22 +344,198 @@ public class RegionEvents {
             return;
         }
 
-        RegionPos regionPos = RegionPos.fromChunk(chunkPos);
+        HeadlineContext headline = resolveHeadline(level, regionPos, gameTime);
+        AmbientCooldowns cooldowns = ambientCooldowns.computeIfAbsent(player.getUUID(), id -> new AmbientCooldowns());
+        switch (headline.state()) {
+            case SCARRED -> triggerScarredAmbient(level, player, headline.intensity(), cooldowns, gameTime);
+            case HAUNTED -> triggerHauntedAmbient(level, player, headline.intensity(), cooldowns, gameTime);
+            case WAR_TORN -> triggerWarTornAmbient(level, player, headline.intensity(), cooldowns, gameTime);
+            default -> {
+            }
+        }
+    }
+
+    private static boolean hasRegionChanged(PlayerChunk previous, PlayerChunk current) {
+        if (previous == null) {
+            return true;
+        }
+        if (!previous.dimension().equals(current.dimension())) {
+            return true;
+        }
+        RegionPos prevRegion = RegionPos.fromChunk(previous.pos());
+        RegionPos currentRegion = RegionPos.fromChunk(current.pos());
+        return prevRegion.x() != currentRegion.x() || prevRegion.z() != currentRegion.z();
+    }
+
+    private HeadlineContext resolveHeadline(ServerLevel level, RegionPos regionPos, long gameTime) {
         RegionMemoryData data = RegionMemoryData.get(level);
         RegionState.AggregatedScores headlineScores = RegionState.aggregateAreaScoresForHeadline(data, regionPos);
         RegionState.HeadlineResult headline = RegionState.resolveHeadline(data, regionPos, headlineScores, gameTime);
         RegionState state = headline.state();
         RegionState.Intensity intensity = RegionState.intensityForState(state, headlineScores);
         data.updateHeadline(regionPos, state.getId(), gameTime);
+        return new HeadlineContext(state, intensity);
+    }
 
-        AmbientCooldowns cooldowns = ambientCooldowns.computeIfAbsent(player.getUUID(), id -> new AmbientCooldowns());
-        switch (state) {
-            case SCARRED -> triggerScarredAmbient(level, player, intensity, cooldowns, gameTime);
-            case HAUNTED -> triggerHauntedAmbient(level, player, intensity, cooldowns, gameTime);
-            case WAR_TORN -> triggerWarTornAmbient(level, player, intensity, cooldowns, gameTime);
+    private void triggerEntryAmbient(
+            ServerLevel level,
+            ServerPlayer player,
+            HeadlineContext headline,
+            AmbientCooldowns cooldowns,
+            long gameTime
+    ) {
+        if (!EchoRegionsConfig.AMBIENT_ENTRY_ENABLED.get()) {
+            return;
+        }
+        switch (headline.state()) {
+            case SCARRED -> triggerEntryScarred(level, player, headline.intensity(), cooldowns, gameTime);
+            case HAUNTED -> triggerEntryHaunted(level, player, headline.intensity(), cooldowns, gameTime);
+            case WAR_TORN -> triggerEntryWarTorn(level, player, headline.intensity(), cooldowns, gameTime);
             default -> {
             }
         }
+    }
+
+    private void triggerEntryScarred(
+            ServerLevel level,
+            ServerPlayer player,
+            RegionState.Intensity intensity,
+            AmbientCooldowns cooldowns,
+            long gameTime
+    ) {
+        if (!cooldownReady(gameTime, cooldowns.lastScarred)) {
+            return;
+        }
+        double multiplier = EchoRegionsConfig.AMBIENT_ENTRY_CHANCE_MULTIPLIER.get();
+        double chance = Math.min(1.0, chanceForIntensity(
+                intensity,
+                EchoRegionsConfig.SCARRED_AMBIENT_CHANCE_LOW.get(),
+                EchoRegionsConfig.SCARRED_AMBIENT_CHANCE_MED.get(),
+                EchoRegionsConfig.SCARRED_AMBIENT_CHANCE_HIGH.get()
+        ) * multiplier);
+        if (!roll(level, chance)) {
+            return;
+        }
+        int count = scaleCount(countForIntensity(
+                intensity,
+                EchoRegionsConfig.SCARRED_AMBIENT_PARTICLES_LOW.get(),
+                EchoRegionsConfig.SCARRED_AMBIENT_PARTICLES_MED.get(),
+                EchoRegionsConfig.SCARRED_AMBIENT_PARTICLES_HIGH.get()
+        ), EchoRegionsConfig.AMBIENT_ENTRY_PARTICLE_MULTIPLIER.get());
+        BlockPos base = player.blockPosition();
+        spawnDust(level, base, count);
+        double soundChance = Math.min(1.0, chanceForIntensity(
+                intensity,
+                EchoRegionsConfig.SCARRED_SOUND_CHANCE_LOW.get(),
+                EchoRegionsConfig.SCARRED_SOUND_CHANCE_MED.get(),
+                EchoRegionsConfig.SCARRED_SOUND_CHANCE_HIGH.get()
+        ) * EchoRegionsConfig.AMBIENT_ENTRY_SOUND_MULTIPLIER.get());
+        if (roll(level, soundChance)) {
+            level.playSound(
+                    null,
+                    base,
+                    SoundEvents.STONE_HIT,
+                    SoundSource.AMBIENT,
+                    (float) (double) EchoRegionsConfig.SCARRED_SOUND_VOLUME.get(),
+                    (float) (double) EchoRegionsConfig.SCARRED_SOUND_PITCH.get()
+            );
+        }
+        cooldowns.lastScarred = gameTime;
+    }
+
+    private void triggerEntryHaunted(
+            ServerLevel level,
+            ServerPlayer player,
+            RegionState.Intensity intensity,
+            AmbientCooldowns cooldowns,
+            long gameTime
+    ) {
+        if (!isNight(level)) {
+            return;
+        }
+        if (!cooldownReady(gameTime, cooldowns.lastHaunted)) {
+            return;
+        }
+        double chance = Math.min(1.0, chanceForIntensity(
+                intensity,
+                EchoRegionsConfig.HAUNTED_AMBIENT_CHANCE_LOW.get(),
+                EchoRegionsConfig.HAUNTED_AMBIENT_CHANCE_MED.get(),
+                EchoRegionsConfig.HAUNTED_AMBIENT_CHANCE_HIGH.get()
+        ) * EchoRegionsConfig.AMBIENT_ENTRY_CHANCE_MULTIPLIER.get());
+        if (!roll(level, chance)) {
+            return;
+        }
+        int count = scaleCount(countForIntensity(
+                intensity,
+                EchoRegionsConfig.HAUNTED_AMBIENT_PARTICLES_LOW.get(),
+                EchoRegionsConfig.HAUNTED_AMBIENT_PARTICLES_MED.get(),
+                EchoRegionsConfig.HAUNTED_AMBIENT_PARTICLES_HIGH.get()
+        ), EchoRegionsConfig.AMBIENT_ENTRY_PARTICLE_MULTIPLIER.get());
+        BlockPos base = player.blockPosition();
+        level.sendParticles(ParticleTypes.SOUL, base.getX() + 0.5, base.getY() + 1.0, base.getZ() + 0.5, count, 0.35, 0.35, 0.35, 0.01);
+        double soundChance = Math.min(1.0, chanceForIntensity(
+                intensity,
+                EchoRegionsConfig.HAUNTED_SOUND_CHANCE_LOW.get(),
+                EchoRegionsConfig.HAUNTED_SOUND_CHANCE_MED.get(),
+                EchoRegionsConfig.HAUNTED_SOUND_CHANCE_HIGH.get()
+        ) * EchoRegionsConfig.AMBIENT_ENTRY_SOUND_MULTIPLIER.get());
+        if (roll(level, soundChance)) {
+            level.playSound(
+                    null,
+                    base,
+                    SoundEvents.AMBIENT_CAVE.value(),
+                    SoundSource.AMBIENT,
+                    (float) (double) EchoRegionsConfig.HAUNTED_SOUND_VOLUME.get(),
+                    (float) (double) EchoRegionsConfig.HAUNTED_SOUND_PITCH.get()
+            );
+        }
+        cooldowns.lastHaunted = gameTime;
+    }
+
+    private void triggerEntryWarTorn(
+            ServerLevel level,
+            ServerPlayer player,
+            RegionState.Intensity intensity,
+            AmbientCooldowns cooldowns,
+            long gameTime
+    ) {
+        if (!cooldownReady(gameTime, cooldowns.lastWarTorn)) {
+            return;
+        }
+        double chance = Math.min(1.0, chanceForIntensity(
+                intensity,
+                EchoRegionsConfig.WAR_TORN_AMBIENT_CHANCE_LOW.get(),
+                EchoRegionsConfig.WAR_TORN_AMBIENT_CHANCE_MED.get(),
+                EchoRegionsConfig.WAR_TORN_AMBIENT_CHANCE_HIGH.get()
+        ) * EchoRegionsConfig.AMBIENT_ENTRY_CHANCE_MULTIPLIER.get());
+        if (!roll(level, chance)) {
+            return;
+        }
+        int count = scaleCount(countForIntensity(
+                intensity,
+                EchoRegionsConfig.WAR_TORN_AMBIENT_PARTICLES_LOW.get(),
+                EchoRegionsConfig.WAR_TORN_AMBIENT_PARTICLES_MED.get(),
+                EchoRegionsConfig.WAR_TORN_AMBIENT_PARTICLES_HIGH.get()
+        ), EchoRegionsConfig.AMBIENT_ENTRY_PARTICLE_MULTIPLIER.get());
+        BlockPos base = player.blockPosition();
+        spawnBattleDust(level, base, count);
+        double soundChance = Math.min(1.0, chanceForIntensity(
+                intensity,
+                EchoRegionsConfig.WAR_TORN_SOUND_CHANCE_LOW.get(),
+                EchoRegionsConfig.WAR_TORN_SOUND_CHANCE_MED.get(),
+                EchoRegionsConfig.WAR_TORN_SOUND_CHANCE_HIGH.get()
+        ) * EchoRegionsConfig.AMBIENT_ENTRY_SOUND_MULTIPLIER.get());
+        if (roll(level, soundChance)) {
+            level.playSound(
+                    null,
+                    base,
+                    SoundEvents.SHIELD_BLOCK.value(),
+                    SoundSource.AMBIENT,
+                    (float) (double) EchoRegionsConfig.WAR_TORN_SOUND_VOLUME.get(),
+                    (float) (double) EchoRegionsConfig.WAR_TORN_SOUND_PITCH.get()
+            );
+        }
+        cooldowns.lastWarTorn = gameTime;
     }
 
     private void triggerScarredAmbient(
@@ -382,6 +568,22 @@ public class RegionEvents {
                 EchoRegionsConfig.SCARRED_AMBIENT_PARTICLES_HIGH.get()
         );
         level.sendParticles(ParticleTypes.ASH, x, y, z, count, 0.5, 0.25, 0.5, 0.02);
+        double soundChance = chanceForIntensity(
+                intensity,
+                EchoRegionsConfig.SCARRED_SOUND_CHANCE_LOW.get(),
+                EchoRegionsConfig.SCARRED_SOUND_CHANCE_MED.get(),
+                EchoRegionsConfig.SCARRED_SOUND_CHANCE_HIGH.get()
+        );
+        if (roll(level, soundChance)) {
+            level.playSound(
+                    null,
+                    base,
+                    SoundEvents.STONE_HIT,
+                    SoundSource.AMBIENT,
+                    (float) (double) EchoRegionsConfig.SCARRED_SOUND_VOLUME.get(),
+                    (float) (double) EchoRegionsConfig.SCARRED_SOUND_PITCH.get()
+            );
+        }
         cooldowns.lastScarred = gameTime;
     }
 
@@ -467,6 +669,22 @@ public class RegionEvents {
                 EchoRegionsConfig.WAR_TORN_AMBIENT_PARTICLES_HIGH.get()
         );
         level.sendParticles(ParticleTypes.CRIT, x, y, z, count, 0.35, 0.2, 0.35, 0.04);
+        double soundChance = chanceForIntensity(
+                intensity,
+                EchoRegionsConfig.WAR_TORN_SOUND_CHANCE_LOW.get(),
+                EchoRegionsConfig.WAR_TORN_SOUND_CHANCE_MED.get(),
+                EchoRegionsConfig.WAR_TORN_SOUND_CHANCE_HIGH.get()
+        );
+        if (roll(level, soundChance)) {
+            level.playSound(
+                    null,
+                    base,
+                    SoundEvents.SHIELD_BLOCK.value(),
+                    SoundSource.AMBIENT,
+                    (float) (double) EchoRegionsConfig.WAR_TORN_SOUND_VOLUME.get(),
+                    (float) (double) EchoRegionsConfig.WAR_TORN_SOUND_PITCH.get()
+            );
+        }
         cooldowns.lastWarTorn = gameTime;
     }
 
@@ -508,6 +726,10 @@ public class RegionEvents {
             case MED -> med;
             case HIGH -> high;
         };
+    }
+
+    private static int scaleCount(int base, double multiplier) {
+        return Math.max(1, (int) Math.round(base * multiplier));
     }
 
     private static void spawnDust(ServerLevel level, BlockPos pos, int count) {

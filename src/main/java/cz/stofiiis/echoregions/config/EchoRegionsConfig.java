@@ -42,6 +42,10 @@ public final class EchoRegionsConfig {
     public static final ModConfigSpec.BooleanValue AMBIENT_ENABLED;
     public static final ModConfigSpec.IntValue AMBIENT_CHECK_INTERVAL_TICKS;
     public static final ModConfigSpec.IntValue AMBIENT_COOLDOWN_TICKS;
+    public static final ModConfigSpec.BooleanValue AMBIENT_ENTRY_ENABLED;
+    public static final ModConfigSpec.DoubleValue AMBIENT_ENTRY_CHANCE_MULTIPLIER;
+    public static final ModConfigSpec.DoubleValue AMBIENT_ENTRY_PARTICLE_MULTIPLIER;
+    public static final ModConfigSpec.DoubleValue AMBIENT_ENTRY_SOUND_MULTIPLIER;
 
     public static final ModConfigSpec.DoubleValue SCARRED_AMBIENT_CHANCE_LOW;
     public static final ModConfigSpec.DoubleValue SCARRED_AMBIENT_CHANCE_MED;
@@ -49,6 +53,11 @@ public final class EchoRegionsConfig {
     public static final ModConfigSpec.IntValue SCARRED_AMBIENT_PARTICLES_LOW;
     public static final ModConfigSpec.IntValue SCARRED_AMBIENT_PARTICLES_MED;
     public static final ModConfigSpec.IntValue SCARRED_AMBIENT_PARTICLES_HIGH;
+    public static final ModConfigSpec.DoubleValue SCARRED_SOUND_CHANCE_LOW;
+    public static final ModConfigSpec.DoubleValue SCARRED_SOUND_CHANCE_MED;
+    public static final ModConfigSpec.DoubleValue SCARRED_SOUND_CHANCE_HIGH;
+    public static final ModConfigSpec.DoubleValue SCARRED_SOUND_VOLUME;
+    public static final ModConfigSpec.DoubleValue SCARRED_SOUND_PITCH;
     public static final ModConfigSpec.DoubleValue SCARRED_MINING_CHANCE_LOW;
     public static final ModConfigSpec.DoubleValue SCARRED_MINING_CHANCE_MED;
     public static final ModConfigSpec.DoubleValue SCARRED_MINING_CHANCE_HIGH;
@@ -74,6 +83,11 @@ public final class EchoRegionsConfig {
     public static final ModConfigSpec.IntValue WAR_TORN_AMBIENT_PARTICLES_LOW;
     public static final ModConfigSpec.IntValue WAR_TORN_AMBIENT_PARTICLES_MED;
     public static final ModConfigSpec.IntValue WAR_TORN_AMBIENT_PARTICLES_HIGH;
+    public static final ModConfigSpec.DoubleValue WAR_TORN_SOUND_CHANCE_LOW;
+    public static final ModConfigSpec.DoubleValue WAR_TORN_SOUND_CHANCE_MED;
+    public static final ModConfigSpec.DoubleValue WAR_TORN_SOUND_CHANCE_HIGH;
+    public static final ModConfigSpec.DoubleValue WAR_TORN_SOUND_VOLUME;
+    public static final ModConfigSpec.DoubleValue WAR_TORN_SOUND_PITCH;
     public static final ModConfigSpec.DoubleValue WAR_TORN_COMBAT_CHANCE_LOW;
     public static final ModConfigSpec.DoubleValue WAR_TORN_COMBAT_CHANCE_MED;
     public static final ModConfigSpec.DoubleValue WAR_TORN_COMBAT_CHANCE_HIGH;
@@ -184,6 +198,18 @@ public final class EchoRegionsConfig {
         AMBIENT_COOLDOWN_TICKS = BUILDER
                 .comment("Minimum ticks between ambient cues per player/state.")
                 .defineInRange("cooldownTicks", 100, 0, 12000);
+        AMBIENT_ENTRY_ENABLED = BUILDER
+                .comment("Trigger an extra ambient cue when entering a new region.")
+                .define("entryEnabled", true);
+        AMBIENT_ENTRY_CHANCE_MULTIPLIER = BUILDER
+                .comment("Multiplier applied to ambient chance on region entry.")
+                .defineInRange("entryChanceMultiplier", 1.8, 0.0, 10.0);
+        AMBIENT_ENTRY_PARTICLE_MULTIPLIER = BUILDER
+                .comment("Multiplier applied to particle count on region entry.")
+                .defineInRange("entryParticleMultiplier", 1.5, 0.0, 10.0);
+        AMBIENT_ENTRY_SOUND_MULTIPLIER = BUILDER
+                .comment("Multiplier applied to haunted sound chance on region entry.")
+                .defineInRange("entrySoundMultiplier", 1.5, 0.0, 10.0);
 
         BUILDER.push("scarred");
         SCARRED_AMBIENT_CHANCE_LOW = BUILDER.defineInRange("ambientChanceLow", 0.25, 0.0, 1.0);
@@ -192,6 +218,11 @@ public final class EchoRegionsConfig {
         SCARRED_AMBIENT_PARTICLES_LOW = BUILDER.defineInRange("ambientParticlesLow", 6, 0, 200);
         SCARRED_AMBIENT_PARTICLES_MED = BUILDER.defineInRange("ambientParticlesMed", 10, 0, 200);
         SCARRED_AMBIENT_PARTICLES_HIGH = BUILDER.defineInRange("ambientParticlesHigh", 14, 0, 200);
+        SCARRED_SOUND_CHANCE_LOW = BUILDER.defineInRange("soundChanceLow", 0.25, 0.0, 1.0);
+        SCARRED_SOUND_CHANCE_MED = BUILDER.defineInRange("soundChanceMed", 0.4, 0.0, 1.0);
+        SCARRED_SOUND_CHANCE_HIGH = BUILDER.defineInRange("soundChanceHigh", 0.6, 0.0, 1.0);
+        SCARRED_SOUND_VOLUME = BUILDER.defineInRange("soundVolume", 0.5, 0.0, 2.0);
+        SCARRED_SOUND_PITCH = BUILDER.defineInRange("soundPitch", 0.9, 0.5, 2.0);
         SCARRED_MINING_CHANCE_LOW = BUILDER.defineInRange("miningChanceLow", 0.4, 0.0, 1.0);
         SCARRED_MINING_CHANCE_MED = BUILDER.defineInRange("miningChanceMed", 0.6, 0.0, 1.0);
         SCARRED_MINING_CHANCE_HIGH = BUILDER.defineInRange("miningChanceHigh", 0.8, 0.0, 1.0);
@@ -221,6 +252,11 @@ public final class EchoRegionsConfig {
         WAR_TORN_AMBIENT_PARTICLES_LOW = BUILDER.defineInRange("ambientParticlesLow", 6, 0, 200);
         WAR_TORN_AMBIENT_PARTICLES_MED = BUILDER.defineInRange("ambientParticlesMed", 10, 0, 200);
         WAR_TORN_AMBIENT_PARTICLES_HIGH = BUILDER.defineInRange("ambientParticlesHigh", 14, 0, 200);
+        WAR_TORN_SOUND_CHANCE_LOW = BUILDER.defineInRange("soundChanceLow", 0.2, 0.0, 1.0);
+        WAR_TORN_SOUND_CHANCE_MED = BUILDER.defineInRange("soundChanceMed", 0.35, 0.0, 1.0);
+        WAR_TORN_SOUND_CHANCE_HIGH = BUILDER.defineInRange("soundChanceHigh", 0.5, 0.0, 1.0);
+        WAR_TORN_SOUND_VOLUME = BUILDER.defineInRange("soundVolume", 0.55, 0.0, 2.0);
+        WAR_TORN_SOUND_PITCH = BUILDER.defineInRange("soundPitch", 0.8, 0.5, 2.0);
         WAR_TORN_COMBAT_CHANCE_LOW = BUILDER.defineInRange("combatChanceLow", 0.35, 0.0, 1.0);
         WAR_TORN_COMBAT_CHANCE_MED = BUILDER.defineInRange("combatChanceMed", 0.55, 0.0, 1.0);
         WAR_TORN_COMBAT_CHANCE_HIGH = BUILDER.defineInRange("combatChanceHigh", 0.75, 0.0, 1.0);
