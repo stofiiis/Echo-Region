@@ -42,6 +42,8 @@ public final class EchoRegionsConfig {
     public static final ModConfigSpec.BooleanValue AMBIENT_ENABLED;
     public static final ModConfigSpec.IntValue AMBIENT_CHECK_INTERVAL_TICKS;
     public static final ModConfigSpec.IntValue AMBIENT_COOLDOWN_TICKS;
+    public static final ModConfigSpec.IntValue AMBIENT_SOUND_COOLDOWN_TICKS;
+    public static final ModConfigSpec.IntValue AMBIENT_PARTICLE_BURST_CAP;
     public static final ModConfigSpec.BooleanValue AMBIENT_ENTRY_ENABLED;
     public static final ModConfigSpec.DoubleValue AMBIENT_ENTRY_CHANCE_MULTIPLIER;
     public static final ModConfigSpec.DoubleValue AMBIENT_ENTRY_PARTICLE_MULTIPLIER;
@@ -198,18 +200,24 @@ public final class EchoRegionsConfig {
         AMBIENT_COOLDOWN_TICKS = BUILDER
                 .comment("Minimum ticks between ambient cues per player/state.")
                 .defineInRange("cooldownTicks", 100, 0, 12000);
+        AMBIENT_SOUND_COOLDOWN_TICKS = BUILDER
+                .comment("Minimum ticks between any ambient sounds for one player.")
+                .defineInRange("soundCooldownTicks", 80, 0, 12000);
+        AMBIENT_PARTICLE_BURST_CAP = BUILDER
+                .comment("Hard cap for one ambient particle burst.")
+                .defineInRange("particleBurstCap", 24, 0, 500);
         AMBIENT_ENTRY_ENABLED = BUILDER
                 .comment("Trigger an extra ambient cue when entering a new region.")
                 .define("entryEnabled", true);
         AMBIENT_ENTRY_CHANCE_MULTIPLIER = BUILDER
                 .comment("Multiplier applied to ambient chance on region entry.")
-                .defineInRange("entryChanceMultiplier", 1.8, 0.0, 10.0);
+                .defineInRange("entryChanceMultiplier", 1.6, 0.0, 10.0);
         AMBIENT_ENTRY_PARTICLE_MULTIPLIER = BUILDER
                 .comment("Multiplier applied to particle count on region entry.")
-                .defineInRange("entryParticleMultiplier", 1.5, 0.0, 10.0);
+                .defineInRange("entryParticleMultiplier", 1.35, 0.0, 10.0);
         AMBIENT_ENTRY_SOUND_MULTIPLIER = BUILDER
-                .comment("Multiplier applied to haunted sound chance on region entry.")
-                .defineInRange("entrySoundMultiplier", 1.5, 0.0, 10.0);
+                .comment("Multiplier applied to ambient sound chance on region entry.")
+                .defineInRange("entrySoundMultiplier", 1.35, 0.0, 10.0);
 
         BUILDER.push("scarred");
         SCARRED_AMBIENT_CHANCE_LOW = BUILDER.defineInRange("ambientChanceLow", 0.25, 0.0, 1.0);

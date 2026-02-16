@@ -62,6 +62,7 @@ Valid keys:
 `residualEnabled`, `residualNegativePercent`, `residualPositivePercent`, `residualMinFloor`, `residualAffectsHeadline`,
 `scarredPebbleChance`, `hauntedEctoplasmChance`, `warTornStrengthChance`,
 `ambientEnabled`, `ambientCheckIntervalTicks`, `ambientCooldownTicks`,
+`ambientSoundCooldownTicks`, `ambientParticleBurstCap`,
 `ambientEntryEnabled`, `ambientEntryChanceMultiplier`, `ambientEntryParticleMultiplier`, `ambientEntrySoundMultiplier`,
 `scarredAmbientChanceLow`, `scarredAmbientChanceMed`, `scarredAmbientChanceHigh`,
 `scarredAmbientParticlesLow`, `scarredAmbientParticlesMed`, `scarredAmbientParticlesHigh`,
@@ -106,6 +107,7 @@ Minimal sanity checks after changes:
 5) HUD overlay: enable HUD and confirm updates every ~20 ticks.
 6) Map overlay: open map and verify center region and labels are correct.
 7) Ambient cues: in SCARRED/HAUNTED/WAR_TORN regions, verify particles/sounds are noticeable (night for HAUNTED).
+8) Anti-spam: verify repeated ambient sounds respect cooldown and particle bursts stay capped.
 
 ## Build and run
 ```bash

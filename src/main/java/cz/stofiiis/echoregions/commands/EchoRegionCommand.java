@@ -89,6 +89,8 @@ public final class EchoRegionCommand {
         register(entries, "ambientEnabled", EchoRegionsConfig.AMBIENT_ENABLED, ConfigType.BOOLEAN);
         register(entries, "ambientCheckIntervalTicks", EchoRegionsConfig.AMBIENT_CHECK_INTERVAL_TICKS, ConfigType.INT);
         register(entries, "ambientCooldownTicks", EchoRegionsConfig.AMBIENT_COOLDOWN_TICKS, ConfigType.INT);
+        register(entries, "ambientSoundCooldownTicks", EchoRegionsConfig.AMBIENT_SOUND_COOLDOWN_TICKS, ConfigType.INT);
+        register(entries, "ambientParticleBurstCap", EchoRegionsConfig.AMBIENT_PARTICLE_BURST_CAP, ConfigType.INT);
         register(entries, "ambientEntryEnabled", EchoRegionsConfig.AMBIENT_ENTRY_ENABLED, ConfigType.BOOLEAN);
         register(entries, "ambientEntryChanceMultiplier", EchoRegionsConfig.AMBIENT_ENTRY_CHANCE_MULTIPLIER, ConfigType.DOUBLE);
         register(entries, "ambientEntryParticleMultiplier", EchoRegionsConfig.AMBIENT_ENTRY_PARTICLE_MULTIPLIER, ConfigType.DOUBLE);
