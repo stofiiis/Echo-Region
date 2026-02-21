@@ -12,6 +12,7 @@ import cz.stofiiis.echoregions.data.RegionPos;
 import cz.stofiiis.echoregions.debug.DebugOverlaySync;
 import cz.stofiiis.echoregions.debug.DebugOverlayTracker;
 import cz.stofiiis.echoregions.region.RegionState;
+import cz.stofiiis.echoregions.registry.EchoRegionsItems;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
@@ -26,6 +27,7 @@ import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.monster.Monster;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelAccessor;
@@ -99,9 +101,17 @@ public class RegionEvents {
         if (trackFarm) {
             data.addFarmScore(regionPos, 1, level.getGameTime());
         }
-        if (trackMining && EchoRegionsConfig.AMBIENT_ENABLED.get()) {
-            RegionState.ActiveTag scarred = getActiveTag(data, regionPos, RegionState.SCARRED);
-            if (scarred != null && roll(level, chanceForIntensity(
+        RegionState.ActiveTag scarred = null;
+        if (trackMining) {
+            scarred = getActiveTag(data, regionPos, RegionState.SCARRED);
+            if (scarred != null
+                    && canReceiveScarredBonus(event.getPlayer())
+                    && roll(level, EchoRegionsConfig.SCARRED_PEBBLE_CHANCE.get())) {
+                spawnScarredBonusDrop(level, event.getPos());
+            }
+        }
+        if (trackMining && EchoRegionsConfig.AMBIENT_ENABLED.get() && scarred != null) {
+            if (roll(level, chanceForIntensity(
                     scarred.intensity(),
                     EchoRegionsConfig.SCARRED_MINING_CHANCE_LOW.get(),
                     EchoRegionsConfig.SCARRED_MINING_CHANCE_MED.get(),
@@ -784,5 +794,16 @@ public class RegionEvents {
             return;
         }
         level.sendParticles(ParticleTypes.CRIT, pos.getX() + 0.5, pos.getY() + 0.6, pos.getZ() + 0.5, count, 0.3, 0.2, 0.3, 0.05);
+    }
+
+    private static boolean canReceiveScarredBonus(Player player) {
+        return player == null || !player.getAbilities().instabuild;
+    }
+
+    private static void spawnScarredBonusDrop(ServerLevel level, BlockPos pos) {
+        ItemStack bonus = level.random.nextBoolean()
+                ? new ItemStack(EchoRegionsItems.PEBBLE.get())
+                : new ItemStack(Blocks.COBBLESTONE);
+        Block.popResource(level, pos, bonus);
     }
 }

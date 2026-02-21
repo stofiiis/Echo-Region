@@ -4,9 +4,9 @@ Echo Regions tracks region memory (8x8 chunks) and derives a regional state
 without changing biomes or worldgen. Effects and visuals are added via events only.
 
 ## Status
-Current: v0.6
+Current: v0.7.1
 
-## Features (v0.6)
+## Features (v0.7.1)
 - Server-side SavedData: RegionPos (8x8 chunks) -> RegionMemory
 - Mining/combat/death tracking
 - Farming tracking (bone meal, planting, harvest)
@@ -21,6 +21,7 @@ Current: v0.6
 - Pebble + Ectoplasm items with tooltips
 - Region states: SCARRED, HAUNTED, WAR_TORN, CULTIVATED, SETTLED, BLIGHTED, TRAVELLED, EXPLOITED
 - Ambient cues (particles/sounds) for SCARRED/HAUNTED/WAR_TORN
+- SCARRED gameplay effect: mining in SCARRED regions can drop an extra Pebble/Cobblestone bonus
 
 ## Commands
 All commands are server-side. Config/debug/decay commands require gamemaster permissions.
@@ -108,6 +109,7 @@ Minimal sanity checks after changes:
 6) Map overlay: open map and verify center region and labels are correct.
 7) Ambient cues: in SCARRED/HAUNTED/WAR_TORN regions, verify particles/sounds are noticeable (night for HAUNTED).
 8) Anti-spam: verify repeated ambient sounds respect cooldown and particle bursts stay capped.
+9) SCARRED gameplay: mine in a SCARRED region and verify bonus Pebble/Cobblestone drops respect `scarredPebbleChance`.
 
 ## Build and run
 ```bash
