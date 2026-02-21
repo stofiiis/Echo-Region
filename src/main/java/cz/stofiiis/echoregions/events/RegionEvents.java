@@ -140,6 +140,14 @@ public class RegionEvents {
         if (entity instanceof Monster) {
             RegionPos regionPos = RegionPos.fromChunk(entity.chunkPosition());
             data.addCombatScore(regionPos, 1, level.getGameTime());
+            boolean killedByPlayer = event.getSource().getEntity() instanceof Player killer
+                    && !killer.getAbilities().instabuild;
+            if (killedByPlayer) {
+                RegionState.ActiveTag haunted = getActiveTag(data, regionPos, RegionState.HAUNTED);
+                if (haunted != null && roll(level, EchoRegionsConfig.HAUNTED_ECTOPLASM_CHANCE.get())) {
+                    entity.spawnAtLocation(level, new ItemStack(EchoRegionsItems.ECTOPLASM.get()));
+                }
+            }
             if (EchoRegionsConfig.AMBIENT_ENABLED.get()) {
                 RegionState.ActiveTag warTorn = getActiveTag(data, regionPos, RegionState.WAR_TORN);
                 if (warTorn != null && roll(level, chanceForIntensity(
