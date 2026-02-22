@@ -20,10 +20,13 @@ import net.minecraft.resources.Identifier;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.effect.MobEffectInstance;
+import net.minecraft.world.effect.MobEffects;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.monster.Monster;
 import net.minecraft.world.entity.player.Player;
@@ -43,6 +46,7 @@ import net.minecraft.tags.TagKey;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.neoforge.common.Tags;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
+import net.neoforged.neoforge.event.entity.living.FinalizeSpawnEvent;
 import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
 import net.neoforged.neoforge.event.entity.player.BonemealEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
@@ -52,6 +56,8 @@ import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
 
 public class RegionEvents {
+    private static final int WAR_TORN_STRENGTH_DURATION_TICKS = 200;
+
     private static final TagKey<Block> BUILDING_BLOCKS = TagKey.create(
             Registries.BLOCK,
             Identifier.fromNamespaceAndPath(EchoRegions.MOD_ID, "building_blocks")
@@ -168,6 +174,27 @@ public class RegionEvents {
         if (entity instanceof net.minecraft.server.level.ServerPlayer) {
             data.addDeathScore(RegionPos.fromChunk(entity.chunkPosition()), 1, level.getGameTime());
         }
+    }
+
+    @SubscribeEvent
+    public void onFinalizeSpawn(FinalizeSpawnEvent event) {
+        Mob mob = event.getEntity();
+        if (!(mob instanceof Monster)) {
+            return;
+        }
+        if (!(event.getLevel() instanceof ServerLevel level)) {
+            return;
+        }
+        RegionPos regionPos = RegionPos.fromChunk(new ChunkPos(BlockPos.containing(event.getX(), event.getY(), event.getZ())));
+        RegionMemoryData data = RegionMemoryData.get(level);
+        RegionState.ActiveTag warTorn = getActiveTag(data, regionPos, RegionState.WAR_TORN);
+        if (warTorn == null || !roll(level, EchoRegionsConfig.WAR_TORN_STRENGTH_CHANCE.get())) {
+            return;
+        }
+        if (mob.hasEffect(MobEffects.STRENGTH)) {
+            return;
+        }
+        mob.addEffect(new MobEffectInstance(MobEffects.STRENGTH, WAR_TORN_STRENGTH_DURATION_TICKS, 0));
     }
 
     @SubscribeEvent
