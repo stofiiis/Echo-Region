@@ -13,10 +13,12 @@ import cz.stofiiis.echoregions.debug.DebugOverlaySync;
 import cz.stofiiis.echoregions.debug.DebugOverlayTracker;
 import cz.stofiiis.echoregions.region.RegionState;
 import cz.stofiiis.echoregions.registry.EchoRegionsItems;
+import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.Identifier;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -43,6 +45,7 @@ import net.minecraft.world.level.block.SweetBerryBushBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.tags.TagKey;
+import net.minecraft.world.phys.AABB;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.neoforge.common.Tags;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
@@ -74,9 +77,13 @@ public class RegionEvents {
         private long lastHaunted;
         private long lastWarTorn;
         private long lastSound;
+        private long lastAggro;
     }
 
     private record HeadlineContext(RegionState state, RegionState.Intensity intensity) {
+    }
+
+    private record AggroProfile(double chance, int radius) {
     }
 
     @SubscribeEvent
@@ -289,9 +296,11 @@ public class RegionEvents {
                 HeadlineContext headline = resolveHeadline(level, currentRegion, level.getGameTime());
                 AmbientCooldowns cooldowns = ambientCooldowns.computeIfAbsent(serverPlayer.getUUID(), id -> new AmbientCooldowns());
                 triggerEntryAmbient(level, serverPlayer, headline, cooldowns, level.getGameTime());
+                triggerRegionEntryFeedback(level, serverPlayer, headline, cooldowns, level.getGameTime());
             }
         }
         handleAmbient(level, serverPlayer, current.pos(), currentRegion);
+        handleAggro(level, serverPlayer, currentRegion);
     }
 
     @SubscribeEvent
@@ -402,6 +411,45 @@ public class RegionEvents {
         }
     }
 
+    private void handleAggro(ServerLevel level, ServerPlayer player, RegionPos regionPos) {
+        if (!EchoRegionsConfig.REGION_AGGRO_ENABLED.get() || player.isSpectator()) {
+            return;
+        }
+        AmbientCooldowns cooldowns = ambientCooldowns.computeIfAbsent(player.getUUID(), id -> new AmbientCooldowns());
+        int interval = Math.max(1, EchoRegionsConfig.REGION_AGGRO_CHECK_INTERVAL_TICKS.get());
+        long gameTime = level.getGameTime();
+        if (gameTime - cooldowns.lastAggro < interval) {
+            return;
+        }
+        cooldowns.lastAggro = gameTime;
+
+        HeadlineContext headline = resolveHeadline(level, regionPos, gameTime);
+        AggroProfile profile = aggroProfileFor(headline.state());
+        if (profile == null || profile.chance() <= 0.0 || profile.radius() <= 0) {
+            return;
+        }
+        double chance = Math.min(1.0, profile.chance() * intensityMultiplier(headline.intensity()));
+        int maxMobs = Math.max(0, EchoRegionsConfig.REGION_AGGRO_MAX_MOBS_PER_CHECK.get());
+        if (maxMobs == 0 || chance <= 0.0) {
+            return;
+        }
+
+        AABB bounds = player.getBoundingBox().inflate(profile.radius());
+        java.util.List<Monster> monsters = level.getEntitiesOfClass(Monster.class, bounds, mob -> isAggroCandidate(mob, player));
+        int redirected = 0;
+        for (Monster monster : monsters) {
+            if (redirected >= maxMobs) {
+                break;
+            }
+            if (!roll(level, chance)) {
+                continue;
+            }
+            monster.setTarget(player);
+            monster.setLastHurtByMob(player);
+            redirected++;
+        }
+    }
+
     private static boolean hasRegionChanged(PlayerChunk previous, PlayerChunk current) {
         if (previous == null) {
             return true;
@@ -441,6 +489,77 @@ public class RegionEvents {
             default -> {
             }
         }
+    }
+
+    private void triggerRegionEntryFeedback(
+            ServerLevel level,
+            ServerPlayer player,
+            HeadlineContext headline,
+            AmbientCooldowns cooldowns,
+            long gameTime
+    ) {
+        if (!EchoRegionsConfig.REGION_ENTRY_FEEDBACK_ENABLED.get()) {
+            return;
+        }
+        sendEntryActionbar(player, headline);
+        applyEntryAura(player, headline);
+        playEntryStinger(level, player.blockPosition(), headline, cooldowns, gameTime);
+    }
+
+    private void sendEntryActionbar(ServerPlayer player, HeadlineContext headline) {
+        Component stateName = Component.translatable("echoregions.state." + headline.state().getId())
+                .withStyle(stateColor(headline.state()));
+        Component message = Component.empty()
+                .append(Component.literal("[EchoRegions] ").withStyle(ChatFormatting.AQUA))
+                .append(Component.literal("Entered: ").withStyle(ChatFormatting.GRAY))
+                .append(stateName)
+                .append(Component.literal(" [" + headline.intensity().name() + "]").withStyle(ChatFormatting.DARK_GRAY));
+        player.displayClientMessage(message, true);
+    }
+
+    private void applyEntryAura(ServerPlayer player, HeadlineContext headline) {
+        int duration = Math.max(0, EchoRegionsConfig.REGION_ENTRY_AURA_DURATION_TICKS.get());
+        if (duration <= 0) {
+            return;
+        }
+        MobEffectInstance aura = switch (headline.state()) {
+            case SCARRED -> new MobEffectInstance(MobEffects.MINING_FATIGUE, duration, 0);
+            case HAUNTED -> new MobEffectInstance(MobEffects.WEAKNESS, duration, 0);
+            case WAR_TORN -> new MobEffectInstance(MobEffects.STRENGTH, duration, 0);
+            default -> null;
+        };
+        if (aura != null) {
+            player.addEffect(aura);
+        }
+    }
+
+    private void playEntryStinger(
+            ServerLevel level,
+            BlockPos pos,
+            HeadlineContext headline,
+            AmbientCooldowns cooldowns,
+            long gameTime
+    ) {
+        SoundEvent sound = switch (headline.state()) {
+            case SCARRED -> SoundEvents.STONE_HIT;
+            case HAUNTED -> SoundEvents.AMBIENT_CAVE.value();
+            case WAR_TORN -> SoundEvents.SHIELD_BLOCK.value();
+            default -> null;
+        };
+        if (sound == null) {
+            return;
+        }
+        float volume = (float) switch (headline.intensity()) {
+            case LOW -> 0.55;
+            case MED -> 0.68;
+            case HIGH -> 0.8;
+        };
+        float pitch = switch (headline.state()) {
+            case HAUNTED -> 0.72F;
+            case WAR_TORN -> 0.9F;
+            default -> 0.95F;
+        };
+        playAmbientSound(level, pos, sound, volume, pitch, cooldowns, gameTime);
     }
 
     private void triggerEntryScarred(
@@ -743,6 +862,52 @@ public class RegionEvents {
             );
         }
         cooldowns.lastWarTorn = gameTime;
+    }
+
+    private static AggroProfile aggroProfileFor(RegionState state) {
+        return switch (state) {
+            case HAUNTED -> new AggroProfile(
+                    EchoRegionsConfig.HAUNTED_AGGRO_CHANCE.get(),
+                    EchoRegionsConfig.HAUNTED_AGGRO_RADIUS.get()
+            );
+            case WAR_TORN -> new AggroProfile(
+                    EchoRegionsConfig.WAR_TORN_AGGRO_CHANCE.get(),
+                    EchoRegionsConfig.WAR_TORN_AGGRO_RADIUS.get()
+            );
+            default -> null;
+        };
+    }
+
+    private static double intensityMultiplier(RegionState.Intensity intensity) {
+        return switch (intensity) {
+            case LOW -> 1.0;
+            case MED -> 1.15;
+            case HIGH -> 1.3;
+        };
+    }
+
+    private static boolean isAggroCandidate(Monster mob, ServerPlayer player) {
+        if (!mob.isAlive()) {
+            return false;
+        }
+        if (mob.getTarget() == player) {
+            return false;
+        }
+        return mob.canAttack(player);
+    }
+
+    private static ChatFormatting stateColor(RegionState state) {
+        return switch (state) {
+            case SCARRED -> ChatFormatting.DARK_RED;
+            case HAUNTED -> ChatFormatting.DARK_PURPLE;
+            case WAR_TORN -> ChatFormatting.GOLD;
+            case NEUTRAL -> ChatFormatting.GRAY;
+            case CULTIVATED -> ChatFormatting.GREEN;
+            case SETTLED -> ChatFormatting.DARK_GREEN;
+            case BLIGHTED -> ChatFormatting.RED;
+            case TRAVELLED -> ChatFormatting.BLUE;
+            case EXPLOITED -> ChatFormatting.DARK_AQUA;
+        };
     }
 
     private static RegionState.ActiveTag getActiveTag(RegionMemoryData data, RegionPos regionPos, RegionState target) {

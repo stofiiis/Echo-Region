@@ -4,9 +4,9 @@ Echo Regions tracks region memory (8x8 chunks) and derives a regional state
 without changing biomes or worldgen. Effects and visuals are added via events only.
 
 ## Status
-Current: v0.7.3
+Current: v0.7.4
 
-## Features (v0.7.3)
+## Features (v0.7.4)
 - Server-side SavedData: RegionPos (8x8 chunks) -> RegionMemory
 - Mining/combat/death tracking
 - Farming tracking (bone meal, planting, harvest)
@@ -24,6 +24,8 @@ Current: v0.7.3
 - SCARRED gameplay effect: mining in SCARRED regions can drop an extra Pebble/Cobblestone bonus
 - HAUNTED gameplay effect: player kills in HAUNTED regions can drop Ectoplasm
 - WAR_TORN gameplay effect: hostile mobs spawned in WAR_TORN regions can get short Strength I
+- Strong region-entry feedback (actionbar + stinger + short aura)
+- Region-driven mob behavior: HAUNTED/WAR_TORN can redirect nearby monster aggro
 
 ## Commands
 All commands are server-side. Config/debug/decay commands require gamemaster permissions.
@@ -67,6 +69,7 @@ Valid keys:
 `ambientEnabled`, `ambientCheckIntervalTicks`, `ambientCooldownTicks`,
 `ambientSoundCooldownTicks`, `ambientParticleBurstCap`,
 `ambientEntryEnabled`, `ambientEntryChanceMultiplier`, `ambientEntryParticleMultiplier`, `ambientEntrySoundMultiplier`,
+`regionEntryFeedbackEnabled`, `regionEntryAuraDurationTicks`,
 `scarredAmbientChanceLow`, `scarredAmbientChanceMed`, `scarredAmbientChanceHigh`,
 `scarredAmbientParticlesLow`, `scarredAmbientParticlesMed`, `scarredAmbientParticlesHigh`,
 `scarredSoundChanceLow`, `scarredSoundChanceMed`, `scarredSoundChanceHigh`,
@@ -82,7 +85,9 @@ Valid keys:
 `warTornSoundChanceLow`, `warTornSoundChanceMed`, `warTornSoundChanceHigh`,
 `warTornSoundVolume`, `warTornSoundPitch`,
 `warTornCombatChanceLow`, `warTornCombatChanceMed`, `warTornCombatChanceHigh`,
-`warTornCombatParticlesLow`, `warTornCombatParticlesMed`, `warTornCombatParticlesHigh`
+`warTornCombatParticlesLow`, `warTornCombatParticlesMed`, `warTornCombatParticlesHigh`,
+`regionAggroEnabled`, `regionAggroCheckIntervalTicks`, `regionAggroMaxMobsPerCheck`,
+`hauntedAggroChance`, `hauntedAggroRadius`, `warTornAggroChance`, `warTornAggroRadius`
 
 Notes:
 - `decayMode` accepts `FLAT` or `PERCENT`.
@@ -114,6 +119,8 @@ Minimal sanity checks after changes:
 9) SCARRED gameplay: mine in a SCARRED region and verify bonus Pebble/Cobblestone drops respect `scarredPebbleChance`.
 10) HAUNTED gameplay: kill hostile mobs in a HAUNTED region and verify Ectoplasm drops respect `hauntedEctoplasmChance`.
 11) WAR_TORN gameplay: spawned hostile mobs in a WAR_TORN region should occasionally get short Strength I by `warTornStrengthChance`.
+12) Region entry feedback: crossing region border should show actionbar headline and short state aura (if configured).
+13) Region aggro: in HAUNTED/WAR_TORN, nearby monsters should more often target player by aggro config.
 
 ## Build and run
 ```bash

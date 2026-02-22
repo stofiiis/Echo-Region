@@ -95,6 +95,8 @@ public final class EchoRegionCommand {
         register(entries, "ambientEntryChanceMultiplier", EchoRegionsConfig.AMBIENT_ENTRY_CHANCE_MULTIPLIER, ConfigType.DOUBLE);
         register(entries, "ambientEntryParticleMultiplier", EchoRegionsConfig.AMBIENT_ENTRY_PARTICLE_MULTIPLIER, ConfigType.DOUBLE);
         register(entries, "ambientEntrySoundMultiplier", EchoRegionsConfig.AMBIENT_ENTRY_SOUND_MULTIPLIER, ConfigType.DOUBLE);
+        register(entries, "regionEntryFeedbackEnabled", EchoRegionsConfig.REGION_ENTRY_FEEDBACK_ENABLED, ConfigType.BOOLEAN);
+        register(entries, "regionEntryAuraDurationTicks", EchoRegionsConfig.REGION_ENTRY_AURA_DURATION_TICKS, ConfigType.INT);
         register(entries, "scarredAmbientChanceLow", EchoRegionsConfig.SCARRED_AMBIENT_CHANCE_LOW, ConfigType.DOUBLE);
         register(entries, "scarredAmbientChanceMed", EchoRegionsConfig.SCARRED_AMBIENT_CHANCE_MED, ConfigType.DOUBLE);
         register(entries, "scarredAmbientChanceHigh", EchoRegionsConfig.SCARRED_AMBIENT_CHANCE_HIGH, ConfigType.DOUBLE);
@@ -140,6 +142,13 @@ public final class EchoRegionCommand {
         register(entries, "warTornCombatParticlesLow", EchoRegionsConfig.WAR_TORN_COMBAT_PARTICLES_LOW, ConfigType.INT);
         register(entries, "warTornCombatParticlesMed", EchoRegionsConfig.WAR_TORN_COMBAT_PARTICLES_MED, ConfigType.INT);
         register(entries, "warTornCombatParticlesHigh", EchoRegionsConfig.WAR_TORN_COMBAT_PARTICLES_HIGH, ConfigType.INT);
+        register(entries, "regionAggroEnabled", EchoRegionsConfig.REGION_AGGRO_ENABLED, ConfigType.BOOLEAN);
+        register(entries, "regionAggroCheckIntervalTicks", EchoRegionsConfig.REGION_AGGRO_CHECK_INTERVAL_TICKS, ConfigType.INT);
+        register(entries, "regionAggroMaxMobsPerCheck", EchoRegionsConfig.REGION_AGGRO_MAX_MOBS_PER_CHECK, ConfigType.INT);
+        register(entries, "hauntedAggroChance", EchoRegionsConfig.HAUNTED_AGGRO_CHANCE, ConfigType.DOUBLE);
+        register(entries, "hauntedAggroRadius", EchoRegionsConfig.HAUNTED_AGGRO_RADIUS, ConfigType.INT);
+        register(entries, "warTornAggroChance", EchoRegionsConfig.WAR_TORN_AGGRO_CHANCE, ConfigType.DOUBLE);
+        register(entries, "warTornAggroRadius", EchoRegionsConfig.WAR_TORN_AGGRO_RADIUS, ConfigType.INT);
         return entries;
     }
 

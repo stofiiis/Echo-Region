@@ -48,6 +48,8 @@ public final class EchoRegionsConfig {
     public static final ModConfigSpec.DoubleValue AMBIENT_ENTRY_CHANCE_MULTIPLIER;
     public static final ModConfigSpec.DoubleValue AMBIENT_ENTRY_PARTICLE_MULTIPLIER;
     public static final ModConfigSpec.DoubleValue AMBIENT_ENTRY_SOUND_MULTIPLIER;
+    public static final ModConfigSpec.BooleanValue REGION_ENTRY_FEEDBACK_ENABLED;
+    public static final ModConfigSpec.IntValue REGION_ENTRY_AURA_DURATION_TICKS;
 
     public static final ModConfigSpec.DoubleValue SCARRED_AMBIENT_CHANCE_LOW;
     public static final ModConfigSpec.DoubleValue SCARRED_AMBIENT_CHANCE_MED;
@@ -96,6 +98,13 @@ public final class EchoRegionsConfig {
     public static final ModConfigSpec.IntValue WAR_TORN_COMBAT_PARTICLES_LOW;
     public static final ModConfigSpec.IntValue WAR_TORN_COMBAT_PARTICLES_MED;
     public static final ModConfigSpec.IntValue WAR_TORN_COMBAT_PARTICLES_HIGH;
+    public static final ModConfigSpec.BooleanValue REGION_AGGRO_ENABLED;
+    public static final ModConfigSpec.IntValue REGION_AGGRO_CHECK_INTERVAL_TICKS;
+    public static final ModConfigSpec.IntValue REGION_AGGRO_MAX_MOBS_PER_CHECK;
+    public static final ModConfigSpec.DoubleValue HAUNTED_AGGRO_CHANCE;
+    public static final ModConfigSpec.IntValue HAUNTED_AGGRO_RADIUS;
+    public static final ModConfigSpec.DoubleValue WAR_TORN_AGGRO_CHANCE;
+    public static final ModConfigSpec.IntValue WAR_TORN_AGGRO_RADIUS;
 
     public static final ModConfigSpec SPEC;
 
@@ -218,6 +227,12 @@ public final class EchoRegionsConfig {
         AMBIENT_ENTRY_SOUND_MULTIPLIER = BUILDER
                 .comment("Multiplier applied to ambient sound chance on region entry.")
                 .defineInRange("entrySoundMultiplier", 1.35, 0.0, 10.0);
+        REGION_ENTRY_FEEDBACK_ENABLED = BUILDER
+                .comment("Enable strong on-entry feedback (actionbar, stinger sound, short aura).")
+                .define("regionEntryFeedbackEnabled", true);
+        REGION_ENTRY_AURA_DURATION_TICKS = BUILDER
+                .comment("Duration for temporary region entry aura effects.")
+                .defineInRange("regionEntryAuraDurationTicks", 200, 0, 12000);
 
         BUILDER.push("scarred");
         SCARRED_AMBIENT_CHANCE_LOW = BUILDER.defineInRange("ambientChanceLow", 0.25, 0.0, 1.0);
@@ -273,6 +288,30 @@ public final class EchoRegionsConfig {
         WAR_TORN_COMBAT_PARTICLES_HIGH = BUILDER.defineInRange("combatParticlesHigh", 16, 0, 200);
         BUILDER.pop();
 
+        BUILDER.pop();
+
+        BUILDER.push("aggro");
+        REGION_AGGRO_ENABLED = BUILDER
+                .comment("Enable region-driven monster aggro behavior.")
+                .define("enabled", true);
+        REGION_AGGRO_CHECK_INTERVAL_TICKS = BUILDER
+                .comment("How often aggro logic runs per player (ticks).")
+                .defineInRange("checkIntervalTicks", 40, 1, 1200);
+        REGION_AGGRO_MAX_MOBS_PER_CHECK = BUILDER
+                .comment("Maximum number of monsters redirected per aggro check.")
+                .defineInRange("maxMobsPerCheck", 2, 0, 64);
+        HAUNTED_AGGRO_CHANCE = BUILDER
+                .comment("Per-monster chance to aggro player in HAUNTED regions.")
+                .defineInRange("hauntedChance", 0.2, 0.0, 1.0);
+        HAUNTED_AGGRO_RADIUS = BUILDER
+                .comment("Search radius for aggro in HAUNTED regions.")
+                .defineInRange("hauntedRadius", 14, 1, 128);
+        WAR_TORN_AGGRO_CHANCE = BUILDER
+                .comment("Per-monster chance to aggro player in WAR_TORN regions.")
+                .defineInRange("warTornChance", 0.45, 0.0, 1.0);
+        WAR_TORN_AGGRO_RADIUS = BUILDER
+                .comment("Search radius for aggro in WAR_TORN regions.")
+                .defineInRange("warTornRadius", 22, 1, 128);
         BUILDER.pop();
 
         SPEC = BUILDER.build();
